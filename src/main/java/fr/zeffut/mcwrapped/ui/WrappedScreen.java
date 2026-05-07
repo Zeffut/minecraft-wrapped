@@ -44,7 +44,7 @@ public final class WrappedScreen extends Screen {
         int y = 30;
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("Your " + monthLabel(wrapped.month()) + " Wrapped").formatted(net.minecraft.util.Formatting.GOLD),
-                width / 2, y, 0xFFFFFF);
+                width / 2, y, 0xFFFFFFFF);
         y += 30;
 
         final long playTicks = custom.getOrDefault("minecraft:play_time", 0L);
@@ -63,13 +63,13 @@ public final class WrappedScreen extends Screen {
 
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("S1 placeholder — animated cards coming in S2+").formatted(net.minecraft.util.Formatting.GRAY),
-                width / 2, y, 0xAAAAAA);
+                width / 2, y, 0xFFAAAAAA);
     }
 
     private void line(final DrawContext ctx, final int y, final String label, final String value) {
         final int x = width / 2 - 120;
-        ctx.drawTextWithShadow(textRenderer, Text.literal(label).formatted(net.minecraft.util.Formatting.GRAY), x, y, 0xCCCCCC);
-        ctx.drawTextWithShadow(textRenderer, Text.literal(value).formatted(net.minecraft.util.Formatting.WHITE), x + 160, y, 0xFFFFFF);
+        ctx.drawTextWithShadow(textRenderer, Text.literal(label).formatted(net.minecraft.util.Formatting.GRAY), x, y, 0xFFCCCCCC);
+        ctx.drawTextWithShadow(textRenderer, Text.literal(value).formatted(net.minecraft.util.Formatting.WHITE), x + 160, y, 0xFFFFFFFF);
     }
 
     @Override
