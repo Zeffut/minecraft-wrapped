@@ -6,10 +6,15 @@ import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.ui.WrappedCardScreen;
+import fr.zeffut.mcwrapped.ui.WrappedHistoryScreen;
 import fr.zeffut.mcwrapped.ui.cards.Card;
 import fr.zeffut.mcwrapped.ui.cards.ArchetypeCard;
+import fr.zeffut.mcwrapped.ui.cards.CraftingCard;
 import fr.zeffut.mcwrapped.ui.cards.DeathRecapCard;
+import fr.zeffut.mcwrapped.ui.cards.DimensionCard;
 import fr.zeffut.mcwrapped.ui.cards.DistanceCard;
+import fr.zeffut.mcwrapped.ui.cards.LongestSessionCard;
+import fr.zeffut.mcwrapped.ui.cards.TimeOfDayCard;
 import fr.zeffut.mcwrapped.ui.cards.FinalCard;
 import fr.zeffut.mcwrapped.ui.cards.IntroCard;
 import fr.zeffut.mcwrapped.ui.cards.SocialCard;
@@ -38,6 +43,12 @@ public final class WrappedCommand {
     public static void register(final SnapshotManager snapshots) {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(ClientCommandManager.literal("wrapped")
+                    .executes(c -> openLatest(snapshots))
+                    .then(ClientCommandManager.literal("history").executes(c -> {
+                        final MinecraftClient client = MinecraftClient.getInstance();
+                        client.send(() -> client.setScreen(new WrappedHistoryScreen(client.currentScreen, snapshots)));
+                        return Command.SINGLE_SUCCESS;
+                    }))
                     .then(ClientCommandManager.literal("test")
                             .then(ClientCommandManager.literal("intro").executes(c -> open(snapshots, "intro", ctx -> List.of(new IntroCard(ctx.month())))))
                             .then(ClientCommandManager.literal("time").executes(c -> open(snapshots, "time", ctx -> List.of(new TimeSpentCard(ctx)))))
@@ -48,9 +59,23 @@ public final class WrappedCommand {
                             .then(ClientCommandManager.literal("final").executes(c -> open(snapshots, "final", ctx -> List.of(new FinalCard(ctx)))))
                             .then(ClientCommandManager.literal("archetype").executes(c -> open(snapshots, "archetype", ctx -> List.of(new ArchetypeCard(ctx)))))
                             .then(ClientCommandManager.literal("distance").executes(c -> open(snapshots, "distance", ctx -> List.of(new DistanceCard(ctx)))))
+                            .then(ClientCommandManager.literal("crafted").executes(c -> open(snapshots, "crafted", ctx -> List.of(new CraftingCard(ctx)))))
+                            .then(ClientCommandManager.literal("session").executes(c -> open(snapshots, "session", ctx -> List.of(new LongestSessionCard(ctx)))))
+                            .then(ClientCommandManager.literal("hour").executes(c -> open(snapshots, "hour", ctx -> List.of(new TimeOfDayCard(ctx)))))
+                            .then(ClientCommandManager.literal("dimension").executes(c -> open(snapshots, "dimension", ctx -> List.of(new DimensionCard(ctx)))))
                             .then(ClientCommandManager.literal("deaths").executes(c -> open(snapshots, "deaths", ctx -> List.of(new DeathRecapCard(ctx)))))
                             .then(ClientCommandManager.literal("full").executes(c -> open(snapshots, "full", WrappedSequence::full)))));
         });
+    }
+
+    private static int openLatest(final SnapshotManager snapshots) {
+        final List<WrappedFile> all = snapshots.listWrapped();
+        if (all.isEmpty()) {
+            final MinecraftClient client = MinecraftClient.getInstance();
+            client.player.sendMessage(Text.literal("No wrapped yet — come back next month."), false);
+            return Command.SINGLE_SUCCESS;
+        }
+        return open(snapshots, "latest", WrappedSequence::full);
     }
 
     private static int open(final SnapshotManager snapshots, final String label, final Function<WrappedContext, List<Card>> builder) {

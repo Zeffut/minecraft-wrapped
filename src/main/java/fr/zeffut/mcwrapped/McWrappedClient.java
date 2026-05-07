@@ -1,13 +1,18 @@
 package fr.zeffut.mcwrapped;
 
 import fr.zeffut.mcwrapped.stats.MonthlyDelta;
+import fr.zeffut.mcwrapped.stats.DimensionTracker;
 import fr.zeffut.mcwrapped.stats.MultiplayerTracker;
 import fr.zeffut.mcwrapped.stats.ServerPlayTimeTracker;
+import fr.zeffut.mcwrapped.stats.ServerStatsTracker;
+import fr.zeffut.mcwrapped.stats.SessionTracker;
+import fr.zeffut.mcwrapped.stats.TimeOfDayTracker;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.command.WrappedCommand;
+import fr.zeffut.mcwrapped.ui.WrappedReadyToast;
 import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -26,16 +31,25 @@ public final class McWrappedClient implements ClientModInitializer {
 
     private final SnapshotManager snapshots = new SnapshotManager();
     private final ServerPlayTimeTracker serverTracker = new ServerPlayTimeTracker();
+    private final ServerStatsTracker serverStatsTracker = new ServerStatsTracker();
     private final MultiplayerTracker multiplayerTracker = new MultiplayerTracker();
+    private final SessionTracker sessionTracker = new SessionTracker();
+    private final TimeOfDayTracker timeOfDayTracker = new TimeOfDayTracker();
+    private final DimensionTracker dimensionTracker = new DimensionTracker();
 
     @Override
     public void onInitializeClient() {
         LOGGER.info("Minecraft Wrapped initialized.");
 
         serverTracker.register();
+        serverStatsTracker.register();
         multiplayerTracker.register();
+        sessionTracker.register();
+        timeOfDayTracker.register();
+        dimensionTracker.register();
         ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndFinalize);
         WrappedTitleButton.register(snapshots);
+        WrappedReadyToast.register(snapshots);
         WrappedCommand.register(snapshots);
     }
 
@@ -44,7 +58,7 @@ public final class McWrappedClient implements ClientModInitializer {
      * If the previous snapshot belongs to an earlier month, finalize a wrapped file for it.
      */
     private void captureAndFinalize(final MinecraftClient client) {
-        final Optional<StatsReader.Aggregated> aggOpt = StatsReader.readAggregated(client, serverTracker);
+        final Optional<StatsReader.Aggregated> aggOpt = StatsReader.readAggregated(client, serverTracker, serverStatsTracker);
         if (aggOpt.isEmpty() || aggOpt.get().total().isEmpty()) {
             LOGGER.info("No stats data found yet — come back next month for your first Wrapped!");
             return;

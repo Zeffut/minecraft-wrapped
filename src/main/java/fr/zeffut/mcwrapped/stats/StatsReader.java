@@ -25,7 +25,9 @@ public final class StatsReader {
 
     private StatsReader() {}
 
-    public static Optional<Aggregated> readAggregated(final MinecraftClient client, final ServerPlayTimeTracker serverTracker) {
+    public static Optional<Aggregated> readAggregated(final MinecraftClient client,
+                                                      final ServerPlayTimeTracker serverPlayTime,
+                                                      final ServerStatsTracker serverStats) {
         final UUID uuid = client.getSession().getUuidOrNull();
         if (uuid == null) {
             McWrappedClient.LOGGER.warn("No client session UUID, cannot read stats.");
@@ -34,7 +36,7 @@ public final class StatsReader {
         final Map<String, Map<String, Long>> aggregated = new LinkedHashMap<>();
         final Map<String, Long> perWorldPlayTime = new LinkedHashMap<>();
 
-        // Singleplayer worlds.
+        // 1. Singleplayer worlds.
         final Path savesDir = FabricLoader.getInstance().getGameDir().resolve("saves");
         int worldsScanned = 0;
         int worldsWithStats = 0;
@@ -65,22 +67,40 @@ public final class StatsReader {
             }
         }
 
-        // Servers (tracked client-side).
-        long serverTotal = 0;
-        for (final Map.Entry<String, Long> entry : serverTracker.playTimeByDisplayName().entrySet()) {
-            perWorldPlayTime.merge(WorldKey.server(entry.getKey()), entry.getValue(), Long::sum);
-            serverTotal += entry.getValue();
+        // 2. Servers — full vanilla stats from REQUEST_STATS responses.
+        for (final Map.Entry<String, Map<String, Long>> cat : serverStats.aggregatedStats().entrySet()) {
+            final Map<String, Long> bucket = aggregated.computeIfAbsent(cat.getKey(), k -> new LinkedHashMap<>());
+            for (final Map.Entry<String, Long> stat : cat.getValue().entrySet()) {
+                bucket.merge(stat.getKey(), stat.getValue(), Long::sum);
+            }
         }
 
-        // Server play time also contributes to the aggregate "minecraft:custom"."minecraft:play_time".
-        if (serverTotal > 0) {
+        // 3. Per-server play_time. Prefer the server-side stat (more accurate); fall back to
+        //    the client-side tick counter for servers that don't respond to REQUEST_STATS.
+        final Map<String, Long> fromStats = serverStats.serverPlayTimes();
+        for (final Map.Entry<String, Long> entry : fromStats.entrySet()) {
+            perWorldPlayTime.merge(WorldKey.server(entry.getKey()), entry.getValue(), Long::sum);
+        }
+        for (final Map.Entry<String, Long> entry : serverPlayTime.playTimeByDisplayName().entrySet()) {
+            if (fromStats.containsKey(entry.getKey())) continue;
+            perWorldPlayTime.merge(WorldKey.server(entry.getKey()), entry.getValue(), Long::sum);
+        }
+
+        // 4. If only the tick counter has play time for some server (no stats response), still
+        //    contribute to aggregate play_time so the time-spent card is consistent.
+        long tickCounterFallback = 0;
+        for (final Map.Entry<String, Long> entry : serverPlayTime.playTimeByDisplayName().entrySet()) {
+            if (fromStats.containsKey(entry.getKey())) continue;
+            tickCounterFallback += entry.getValue();
+        }
+        if (tickCounterFallback > 0) {
             aggregated
                     .computeIfAbsent("minecraft:custom", k -> new LinkedHashMap<>())
-                    .merge("minecraft:play_time", serverTotal, Long::sum);
+                    .merge("minecraft:play_time", tickCounterFallback, Long::sum);
         }
 
-        McWrappedClient.LOGGER.info("Scanned {} world(s), {} had stats; {} server(s) tracked.",
-                worldsScanned, worldsWithStats, serverTracker.playTimeByDisplayName().size());
+        McWrappedClient.LOGGER.info("Stats sources — SP: {}/{} worlds, server stats: {}, server tickers: {}.",
+                worldsWithStats, worldsScanned, fromStats.size(), serverPlayTime.playTimeByDisplayName().size());
         return Optional.of(new Aggregated(aggregated, perWorldPlayTime));
     }
 

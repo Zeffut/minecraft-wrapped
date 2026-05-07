@@ -8,7 +8,7 @@ public final class WrappedSequence {
 
     private static final long MIN_PLAY_TICKS = 20L * 60;
     private static final long DEATHS_MIN_PLAY_TICKS = 20L * 60 * 30;
-    private static final long SOCIAL_MIN_SERVER_TICKS = 20L * 60 * 5; // 5 min on a server to be social
+    private static final long SOCIAL_MIN_SERVER_TICKS = 20L * 60 * 5;
 
     private WrappedSequence() {}
 
@@ -19,13 +19,27 @@ public final class WrappedSequence {
         if (context.playTimeTicks() >= MIN_PLAY_TICKS) {
             cards.add(new TimeSpentCard(context));
         }
+
+        // Bonus: session info, only if we have at least one session in the month.
+        final LongestSessionCard sessionCard = new LongestSessionCard(context);
+        if (sessionCard.hasData()) cards.add(sessionCard);
+
+        // Bonus: time-of-day distribution.
+        final TimeOfDayCard timeOfDay = new TimeOfDayCard(context);
+        if (timeOfDay.hasData()) cards.add(timeOfDay);
+
         if (!context.topWorlds(1).isEmpty()) {
             cards.add(new TopWorldCard(context));
         }
+
+        // Bonus: dimensions explored.
+        final DimensionCard dimensionCard = new DimensionCard(context);
+        if (dimensionCard.hasData()) cards.add(dimensionCard);
+
         if (context.serverTicks() >= SOCIAL_MIN_SERVER_TICKS || context.playersMet() > 0 || context.messagesSent() > 0) {
             cards.add(new SocialCard(context));
         }
-        if (totalDistanceCm(context) >= 100_000L) { // ≥ 1 km
+        if (totalDistanceCm(context) >= 100_000L) {
             cards.add(new DistanceCard(context));
         }
         if (!context.topMined(1).isEmpty()) {
@@ -33,6 +47,9 @@ public final class WrappedSequence {
         }
         if (!context.topKilled(1).isEmpty()) {
             cards.add(new TopMobCard(context));
+        }
+        if (context.delta().total("minecraft:crafted") > 0) {
+            cards.add(new CraftingCard(context));
         }
         if (context.playTimeTicks() >= DEATHS_MIN_PLAY_TICKS) {
             cards.add(new DeathRecapCard(context));

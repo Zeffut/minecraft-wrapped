@@ -1,6 +1,7 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.McWrappedClient;
+import fr.zeffut.mcwrapped.export.ClipboardHelper;
 import fr.zeffut.mcwrapped.export.ImageExporter;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
@@ -39,6 +40,7 @@ public final class FinalCard implements Card {
 
     // Button rects (recomputed each render in case window resizes).
     private int saveX, saveY, saveW, saveH;
+    private int copyX, copyY, copyW, copyH;
     private int closeX, closeY, closeW, closeH;
 
     private String toastMessage;
@@ -92,6 +94,10 @@ public final class FinalCard implements Card {
         if (button != 0 || ticks < BUTTONS_START + BUTTONS_DURATION / 2) return false;
         if (inRect(mouseX, mouseY, saveX, saveY, saveW, saveH)) {
             triggerSave();
+            return true;
+        }
+        if (inRect(mouseX, mouseY, copyX, copyY, copyW, copyH)) {
+            triggerCopy();
             return true;
         }
         if (inRect(mouseX, mouseY, closeX, closeY, closeW, closeH)) {
@@ -194,18 +200,23 @@ public final class FinalCard implements Card {
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
         final int alpha = (int) (ease * 255) & 0xFF;
 
-        final int btnW = 130;
+        final int btnW = 110;
         final int btnH = 26;
-        final int gap = 16;
+        final int gap = 12;
+        final int totalW = btnW * 3 + gap * 2;
 
         saveW = btnW; saveH = btnH;
+        copyW = btnW; copyH = btnH;
         closeW = btnW; closeH = btnH;
-        saveX = width / 2 - btnW - gap / 2;
+        saveX = width / 2 - totalW / 2;
         saveY = height / 2 + 150;
-        closeX = width / 2 + gap / 2;
+        copyX = saveX + btnW + gap;
+        copyY = saveY;
+        closeX = copyX + btnW + gap;
         closeY = saveY;
 
         final boolean saveHover = inRect(mouseX, mouseY, saveX, saveY, saveW, saveH);
+        final boolean copyHover = inRect(mouseX, mouseY, copyX, copyY, copyW, copyH);
         final boolean closeHover = inRect(mouseX, mouseY, closeX, closeY, closeW, closeH);
 
         // Save button — accent green.
@@ -213,16 +224,21 @@ public final class FinalCard implements Card {
         ctx.fill(saveX, saveY, saveX + saveW, saveY + saveH, withAlpha(saveBg, alpha));
         CardEffects.drawRectBorder(ctx, saveX, saveY, saveX + saveW, saveY + saveH, 1, withAlpha(0x16A34A, alpha));
         ctx.drawCenteredTextWithShadow(tr, Text.literal("Save Image"),
-                saveX + saveW / 2, saveY + 9,
-                (alpha << 24) | 0x0F172A);
+                saveX + saveW / 2, saveY + 9, (alpha << 24) | 0x0F172A);
+
+        // Copy button — accent gold.
+        final int copyBg = copyHover ? 0xFFFEDF8E : CardEffects.ACCENT_GOLD;
+        ctx.fill(copyX, copyY, copyX + copyW, copyY + copyH, withAlpha(copyBg, alpha));
+        CardEffects.drawRectBorder(ctx, copyX, copyY, copyX + copyW, copyY + copyH, 1, withAlpha(0xCA8A04, alpha));
+        ctx.drawCenteredTextWithShadow(tr, Text.literal("Copy"),
+                copyX + copyW / 2, copyY + 9, (alpha << 24) | 0x0F172A);
 
         // Close button — neutral.
         final int closeBg = closeHover ? 0xFF334155 : 0xFF1E293B;
         ctx.fill(closeX, closeY, closeX + closeW, closeY + closeH, withAlpha(closeBg, alpha));
         CardEffects.drawRectBorder(ctx, closeX, closeY, closeX + closeW, closeY + closeH, 1, withAlpha(0x475569, alpha));
         ctx.drawCenteredTextWithShadow(tr, Text.literal("Close"),
-                closeX + closeW / 2, closeY + 9,
-                (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF));
+                closeX + closeW / 2, closeY + 9, (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF));
     }
 
     private void renderToast(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
@@ -240,6 +256,28 @@ public final class FinalCard implements Card {
     }
 
     // --- Logic --------------------------------------------------------------
+
+    private void triggerCopy() {
+        toastMessage = "Copying...";
+        toastStartTick = ticks;
+        new Thread(() -> {
+            try {
+                ClipboardHelper.copyImage(ImageExporter.render(context));
+                MinecraftClient.getInstance().execute(() -> {
+                    toastMessage = "Copied to clipboard!";
+                    toastStartTick = ticks;
+                    MinecraftClient.getInstance().getSoundManager().play(
+                            PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
+                });
+            } catch (final RuntimeException e) {
+                McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
+                MinecraftClient.getInstance().execute(() -> {
+                    toastMessage = "Copy failed: " + e.getMessage();
+                    toastStartTick = ticks;
+                });
+            }
+        }, "mcwrapped-copy").start();
+    }
 
     private void triggerSave() {
         toastMessage = "Saving...";

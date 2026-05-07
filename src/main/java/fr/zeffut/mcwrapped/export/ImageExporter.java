@@ -50,7 +50,7 @@ public final class ImageExporter {
 
     private ImageExporter() {}
 
-    public static Path export(final WrappedContext ctx) throws IOException {
+    public static BufferedImage render(final WrappedContext ctx) {
         ensureFontLoaded();
 
         final BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
@@ -68,7 +68,11 @@ public final class ImageExporter {
         } finally {
             g.dispose();
         }
+        return img;
+    }
 
+    public static Path export(final WrappedContext ctx) throws IOException {
+        final BufferedImage img = render(ctx);
         final Path out = FabricLoader.getInstance().getGameDir()
                 .resolve("screenshots").resolve("wrapped")
                 .resolve("wrapped-" + ctx.month().format(DateTimeFormatter.ofPattern("yyyy-MM")) + ".png");
