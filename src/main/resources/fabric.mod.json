@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "mcwrapped",
+  "version": "${version}",
+  "name": "Minecraft Wrapped",
+  "description": "Spotify Wrapped, mais pour Minecraft. Recap mensuel animé de ton mois en jeu.",
+  "authors": ["Zeffut"],
+  "contact": {
+    "homepage": "https://github.com/Zeffut/minecraft-wrapped",
+    "sources": "https://github.com/Zeffut/minecraft-wrapped",
+    "issues": "https://github.com/Zeffut/minecraft-wrapped/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/mcwrapped/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "fr.zeffut.mcwrapped.McWrappedClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
