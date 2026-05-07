@@ -15,22 +15,25 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * Persists a single global snapshot per month at {@code <gameDir>/wrapped/snapshot-YYYY-MM.json}.
- *
- * <p>The Wrapped concept covers the player's whole game, not a specific world or server — so we
- * keep a single snapshot lineage rather than per-context buckets.
+ * Persists two file families under {@code <gameDir>/wrapped/}:
+ * <ul>
+ *   <li>{@code snapshot-YYYY-MM.json} — raw cumulative stats captured at launch</li>
+ *   <li>{@code wrapped-YYYY-MM.json}  — finalized recap for a completed month, with consumed flag</li>
+ * </ul>
  */
 public final class SnapshotManager {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
-    private static final String FILE_PREFIX = "snapshot-";
-    private static final String FILE_SUFFIX = ".json";
+    private static final String SNAPSHOT_PREFIX = "snapshot-";
+    private static final String WRAPPED_PREFIX = "wrapped-";
+    private static final String SUFFIX = ".json";
 
     private final Path root;
 
@@ -42,11 +45,13 @@ public final class SnapshotManager {
         this.root = root;
     }
 
+    // --- Snapshots ----------------------------------------------------------
+
     public Path snapshotPath(final YearMonth month) {
-        return root.resolve(FILE_PREFIX + month.format(MONTH_FMT) + FILE_SUFFIX);
+        return root.resolve(SNAPSHOT_PREFIX + month.format(MONTH_FMT) + SUFFIX);
     }
 
-    public void save(final StatsSnapshot snapshot) {
+    public void saveSnapshot(final StatsSnapshot snapshot) {
         try {
             Files.createDirectories(root);
             final JsonObject obj = new JsonObject();
@@ -54,17 +59,21 @@ public final class SnapshotManager {
             obj.addProperty("captured_at", snapshot.capturedAt().toString());
             obj.add("stats_raw", GSON.toJsonTree(snapshot.statsRaw()));
             Files.writeString(snapshotPath(snapshot.month()), GSON.toJson(obj));
-            McWrappedClient.LOGGER.info("Saved snapshot for {}", snapshot.month());
         } catch (final IOException e) {
             McWrappedClient.LOGGER.warn("Failed to save snapshot: {}", e.getMessage());
         }
     }
 
-    public Optional<StatsSnapshot> load(final YearMonth month) {
-        final Path file = snapshotPath(month);
-        if (!Files.exists(file)) {
-            return Optional.empty();
-        }
+    public Optional<StatsSnapshot> loadSnapshot(final YearMonth month) {
+        return loadSnapshotFile(snapshotPath(month));
+    }
+
+    public Optional<StatsSnapshot> loadLatestSnapshot() {
+        return latestFile(SNAPSHOT_PREFIX).flatMap(this::loadSnapshotFile);
+    }
+
+    private Optional<StatsSnapshot> loadSnapshotFile(final Path file) {
+        if (!Files.exists(file)) return Optional.empty();
         try {
             final JsonObject obj = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
             final YearMonth m = YearMonth.parse(obj.get("month").getAsString(), MONTH_FMT);
@@ -77,22 +86,83 @@ public final class SnapshotManager {
         }
     }
 
-    public Optional<StatsSnapshot> loadLatest() {
-        if (!Files.isDirectory(root)) {
-            return Optional.empty();
+    // --- Finalized wrapped --------------------------------------------------
+
+    public Path wrappedPath(final YearMonth month) {
+        return root.resolve(WRAPPED_PREFIX + month.format(MONTH_FMT) + SUFFIX);
+    }
+
+    public boolean wrappedExists(final YearMonth month) {
+        return Files.exists(wrappedPath(month));
+    }
+
+    public void saveWrapped(final WrappedFile wrapped) {
+        try {
+            Files.createDirectories(root);
+            final JsonObject obj = new JsonObject();
+            obj.addProperty("month", wrapped.month().format(MONTH_FMT));
+            obj.addProperty("consumed", wrapped.consumed());
+            obj.add("deltas", GSON.toJsonTree(wrapped.delta().deltas()));
+            Files.writeString(wrappedPath(wrapped.month()), GSON.toJson(obj));
+            McWrappedClient.LOGGER.info("Wrapped finalized for {}.", wrapped.month());
+        } catch (final IOException e) {
+            McWrappedClient.LOGGER.warn("Failed to save wrapped: {}", e.getMessage());
         }
+    }
+
+    public Optional<WrappedFile> loadWrapped(final YearMonth month) {
+        return loadWrappedFile(wrappedPath(month));
+    }
+
+    public List<WrappedFile> listWrapped() {
+        if (!Files.isDirectory(root)) return List.of();
         try (final Stream<Path> stream = Files.list(root)) {
             return stream
                     .filter(p -> {
-                        final String name = p.getFileName().toString();
-                        return name.startsWith(FILE_PREFIX) && name.endsWith(FILE_SUFFIX);
+                        final String n = p.getFileName().toString();
+                        return n.startsWith(WRAPPED_PREFIX) && n.endsWith(SUFFIX);
                     })
-                    .max(Comparator.comparing(p -> p.getFileName().toString()))
-                    .flatMap(p -> {
-                        final String name = p.getFileName().toString();
-                        final String monthStr = name.substring(FILE_PREFIX.length(), name.length() - FILE_SUFFIX.length());
-                        return load(YearMonth.parse(monthStr, MONTH_FMT));
-                    });
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .map(this::loadWrappedFile)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .toList();
+        } catch (final IOException e) {
+            return List.of();
+        }
+    }
+
+    public Optional<WrappedFile> findLatestUnconsumed() {
+        return listWrapped().stream()
+                .filter(w -> !w.consumed())
+                .max(Comparator.comparing(WrappedFile::month));
+    }
+
+    private Optional<WrappedFile> loadWrappedFile(final Path file) {
+        if (!Files.exists(file)) return Optional.empty();
+        try {
+            final JsonObject obj = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            final YearMonth m = YearMonth.parse(obj.get("month").getAsString(), MONTH_FMT);
+            final boolean consumed = obj.has("consumed") && obj.get("consumed").getAsBoolean();
+            final Map<String, Map<String, Long>> deltas = parseRaw(obj.getAsJsonObject("deltas"));
+            return Optional.of(new WrappedFile(m, new MonthlyDelta(m, deltas), consumed));
+        } catch (final IOException e) {
+            McWrappedClient.LOGGER.warn("Failed to load wrapped {}: {}", file, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    // --- Helpers ------------------------------------------------------------
+
+    private Optional<Path> latestFile(final String prefix) {
+        if (!Files.isDirectory(root)) return Optional.empty();
+        try (final Stream<Path> stream = Files.list(root)) {
+            return stream
+                    .filter(p -> {
+                        final String n = p.getFileName().toString();
+                        return n.startsWith(prefix) && n.endsWith(SUFFIX);
+                    })
+                    .max(Comparator.comparing(p -> p.getFileName().toString()));
         } catch (final IOException e) {
             return Optional.empty();
         }

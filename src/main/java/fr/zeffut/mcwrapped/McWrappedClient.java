@@ -4,6 +4,8 @@ import fr.zeffut.mcwrapped.stats.MonthlyDelta;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
+import fr.zeffut.mcwrapped.stats.WrappedFile;
+import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.MinecraftClient;
@@ -26,24 +28,25 @@ public final class McWrappedClient implements ClientModInitializer {
     public void onInitializeClient() {
         LOGGER.info("Minecraft Wrapped initialized.");
 
-        ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndReport);
+        ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndFinalize);
+        WrappedTitleButton.register(snapshots);
     }
 
-    private void captureAndReport(final MinecraftClient client) {
+    /**
+     * On every game start: refresh the cumulative-stats snapshot for the current month.
+     * If the previous snapshot belongs to an earlier month, finalize a wrapped file for it.
+     */
+    private void captureAndFinalize(final MinecraftClient client) {
         final Optional<Map<String, Map<String, Long>>> rawOpt = StatsReader.readAggregated(client);
-        if (rawOpt.isEmpty()) {
-            return;
-        }
-        final Map<String, Map<String, Long>> raw = rawOpt.get();
-        if (raw.isEmpty()) {
+        if (rawOpt.isEmpty() || rawOpt.get().isEmpty()) {
             LOGGER.info("No stats data found yet — come back next month for your first Wrapped!");
             return;
         }
 
         final YearMonth currentMonth = YearMonth.now(ZoneId.systemDefault());
-        final StatsSnapshot current = new StatsSnapshot(currentMonth, Instant.now(), raw);
-        final Optional<StatsSnapshot> latest = snapshots.loadLatest();
-        snapshots.save(current);
+        final StatsSnapshot current = new StatsSnapshot(currentMonth, Instant.now(), rawOpt.get());
+        final Optional<StatsSnapshot> latest = snapshots.loadLatestSnapshot();
+        snapshots.saveSnapshot(current);
 
         if (latest.isEmpty()) {
             LOGGER.info("First snapshot saved. Come back next month for your first Wrapped!");
@@ -51,34 +54,17 @@ public final class McWrappedClient implements ClientModInitializer {
         }
 
         final StatsSnapshot prev = latest.get();
-        if (prev.month().equals(currentMonth)) {
-            LOGGER.info("Snapshot updated for current month {}.", currentMonth);
+        if (!prev.month().isBefore(currentMonth)) {
+            return;
+        }
+
+        if (snapshots.wrappedExists(prev.month())) {
+            LOGGER.debug("Wrapped for {} already finalized.", prev.month());
             return;
         }
 
         final MonthlyDelta delta = MonthlyDelta.compute(prev, current);
-        logDelta(prev.month(), delta);
-    }
-
-    private static void logDelta(final YearMonth month, final MonthlyDelta delta) {
-        LOGGER.info("=== Wrapped recap for {} ===", month);
-
-        final Map<String, Long> custom = delta.deltas().getOrDefault("minecraft:custom", Map.of());
-        final long playTicks = custom.getOrDefault("minecraft:play_time", 0L);
-        LOGGER.info("Play time: {} min ({} ticks)", playTicks / 20 / 60, playTicks);
-        LOGGER.info("Deaths: {}", custom.getOrDefault("minecraft:deaths", 0L));
-        LOGGER.info("Mob kills: {}", custom.getOrDefault("minecraft:mob_kills", 0L));
-        LOGGER.info("Jumps: {}", custom.getOrDefault("minecraft:jump", 0L));
-
-        LOGGER.info("Blocks mined total: {}", delta.total("minecraft:mined"));
-        LOGGER.info("Mobs killed total: {}", delta.total("minecraft:killed"));
-        LOGGER.info("Items used total: {}", delta.total("minecraft:used"));
-        LOGGER.info("Items crafted total: {}", delta.total("minecraft:crafted"));
-
-        delta.deltas().forEach((category, values) -> {
-            LOGGER.debug("[{}] {} entries", category, values.size());
-            values.forEach((key, value) -> LOGGER.debug("  {} = {}", key, value));
-        });
-        LOGGER.info("=== end Wrapped recap ===");
+        snapshots.saveWrapped(new WrappedFile(prev.month(), delta, false));
+        LOGGER.info("Wrapped ready for {} — a button will appear on the title screen.", prev.month());
     }
 }
