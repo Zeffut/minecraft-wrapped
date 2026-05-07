@@ -2,6 +2,7 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public final class WrappedSequence {
 
@@ -24,6 +25,9 @@ public final class WrappedSequence {
         if (context.serverTicks() >= SOCIAL_MIN_SERVER_TICKS || context.playersMet() > 0 || context.messagesSent() > 0) {
             cards.add(new SocialCard(context));
         }
+        if (totalDistanceCm(context) >= 100_000L) { // ≥ 1 km
+            cards.add(new DistanceCard(context));
+        }
         if (!context.topMined(1).isEmpty()) {
             cards.add(new TopBlocksCard(context));
         }
@@ -33,8 +37,22 @@ public final class WrappedSequence {
         if (context.playTimeTicks() >= DEATHS_MIN_PLAY_TICKS) {
             cards.add(new DeathRecapCard(context));
         }
+        if (context.playTimeTicks() >= MIN_PLAY_TICKS) {
+            cards.add(new ArchetypeCard(context));
+        }
         cards.add(new FinalCard(context));
 
         return cards;
+    }
+
+    private static long totalDistanceCm(final WrappedContext ctx) {
+        final Map<String, Long> custom = ctx.delta().deltas().getOrDefault("minecraft:custom", Map.of());
+        return custom.getOrDefault("minecraft:walk_one_cm", 0L)
+                + custom.getOrDefault("minecraft:sprint_one_cm", 0L)
+                + custom.getOrDefault("minecraft:boat_one_cm", 0L)
+                + custom.getOrDefault("minecraft:aviate_one_cm", 0L)
+                + custom.getOrDefault("minecraft:horse_one_cm", 0L)
+                + custom.getOrDefault("minecraft:fly_one_cm", 0L)
+                + custom.getOrDefault("minecraft:swim_one_cm", 0L);
     }
 }

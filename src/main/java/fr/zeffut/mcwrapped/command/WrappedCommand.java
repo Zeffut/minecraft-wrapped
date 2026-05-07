@@ -7,7 +7,9 @@ import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.ui.WrappedCardScreen;
 import fr.zeffut.mcwrapped.ui.cards.Card;
+import fr.zeffut.mcwrapped.ui.cards.ArchetypeCard;
 import fr.zeffut.mcwrapped.ui.cards.DeathRecapCard;
+import fr.zeffut.mcwrapped.ui.cards.DistanceCard;
 import fr.zeffut.mcwrapped.ui.cards.FinalCard;
 import fr.zeffut.mcwrapped.ui.cards.IntroCard;
 import fr.zeffut.mcwrapped.ui.cards.SocialCard;
@@ -44,6 +46,8 @@ public final class WrappedCommand {
                             .then(ClientCommandManager.literal("world").executes(c -> open(snapshots, "world", ctx -> List.of(new TopWorldCard(ctx)))))
                             .then(ClientCommandManager.literal("social").executes(c -> open(snapshots, "social", ctx -> List.of(new SocialCard(ctx)))))
                             .then(ClientCommandManager.literal("final").executes(c -> open(snapshots, "final", ctx -> List.of(new FinalCard(ctx)))))
+                            .then(ClientCommandManager.literal("archetype").executes(c -> open(snapshots, "archetype", ctx -> List.of(new ArchetypeCard(ctx)))))
+                            .then(ClientCommandManager.literal("distance").executes(c -> open(snapshots, "distance", ctx -> List.of(new DistanceCard(ctx)))))
                             .then(ClientCommandManager.literal("deaths").executes(c -> open(snapshots, "deaths", ctx -> List.of(new DeathRecapCard(ctx)))))
                             .then(ClientCommandManager.literal("full").executes(c -> open(snapshots, "full", WrappedSequence::full)))));
         });
