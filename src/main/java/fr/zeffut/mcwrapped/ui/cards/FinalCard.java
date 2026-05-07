@@ -269,7 +269,7 @@ public final class FinalCard implements Card {
                     MinecraftClient.getInstance().getSoundManager().play(
                             PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
                 });
-            } catch (final RuntimeException e) {
+            } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
                 MinecraftClient.getInstance().execute(() -> {
                     toastMessage = "Copy failed: " + e.getMessage();

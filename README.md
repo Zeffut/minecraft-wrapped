@@ -57,8 +57,6 @@ The mod runs silently in the background. On the **first day of every month**, wh
 |---|---|
 | `/wrapped` | Replay the latest finalized Wrapped |
 | `/wrapped history` | Browse all your past Wrappeds |
-| `/wrapped test full` | Preview the full sequence with sample data |
-| `/wrapped test <card>` | Preview a single card (`intro`, `time`, `blocks`, `mob`, `world`, `social`, `distance`, `crafted`, `session`, `hour`, `dimension`, `deaths`, `archetype`, `final`) |
 
 ## How it works
 
