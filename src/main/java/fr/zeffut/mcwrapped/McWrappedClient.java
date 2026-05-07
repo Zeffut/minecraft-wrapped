@@ -5,6 +5,7 @@ import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
+import fr.zeffut.mcwrapped.command.WrappedCommand;
 import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -30,6 +31,7 @@ public final class McWrappedClient implements ClientModInitializer {
 
         ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndFinalize);
         WrappedTitleButton.register(snapshots);
+        WrappedCommand.register();
     }
 
     /**

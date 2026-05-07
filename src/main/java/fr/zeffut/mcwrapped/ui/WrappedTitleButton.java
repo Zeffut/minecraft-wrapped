@@ -2,6 +2,7 @@ package fr.zeffut.mcwrapped.ui;
 
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
+import fr.zeffut.mcwrapped.ui.cards.IntroCard;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.MinecraftClient;
@@ -43,7 +44,7 @@ public final class WrappedTitleButton {
 
     private static void openWrapped(final SnapshotManager snapshots, final net.minecraft.client.gui.screen.Screen parent, final WrappedFile wrapped) {
         snapshots.saveWrapped(wrapped.asConsumed());
-        MinecraftClient.getInstance().setScreen(new WrappedScreen(parent, wrapped));
+        MinecraftClient.getInstance().setScreen(new WrappedCardScreen(parent, new IntroCard(wrapped.month())));
     }
 
     private static String monthLabel(final YearMonth month) {
