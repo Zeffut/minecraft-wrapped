@@ -2,11 +2,10 @@ package fr.zeffut.mcwrapped;
 
 import fr.zeffut.mcwrapped.stats.MonthlyDelta;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
-import fr.zeffut.mcwrapped.stats.StatsContext;
 import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.MinecraftClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,44 +26,33 @@ public final class McWrappedClient implements ClientModInitializer {
     public void onInitializeClient() {
         LOGGER.info("Minecraft Wrapped initialized.");
 
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            client.execute(() -> captureAndReport(client));
-        });
+        ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndReport);
     }
 
     private void captureAndReport(final MinecraftClient client) {
-        final Optional<StatsContext> ctxOpt = StatsContext.current(client);
-        if (ctxOpt.isEmpty()) {
-            LOGGER.debug("No stats context available, skipping.");
-            return;
-        }
-        final StatsContext ctx = ctxOpt.get();
-
-        if (ctx.kind() != StatsContext.Kind.SINGLEPLAYER) {
-            LOGGER.info("Stats capture for servers will land in S5. Context: {}", ctx.id());
-            return;
-        }
-
-        final Optional<Map<String, Map<String, Long>>> rawOpt = StatsReader.readSingleplayer(client);
+        final Optional<Map<String, Map<String, Long>>> rawOpt = StatsReader.readAggregated(client);
         if (rawOpt.isEmpty()) {
-            LOGGER.info("No stats data yet for {}.", ctx.id());
+            return;
+        }
+        final Map<String, Map<String, Long>> raw = rawOpt.get();
+        if (raw.isEmpty()) {
+            LOGGER.info("No stats data found yet — come back next month for your first Wrapped!");
             return;
         }
 
         final YearMonth currentMonth = YearMonth.now(ZoneId.systemDefault());
-        final StatsSnapshot current = new StatsSnapshot(currentMonth, ctx.id(), Instant.now(), rawOpt.get());
-
-        final Optional<StatsSnapshot> latest = snapshots.loadLatest(ctx);
-        snapshots.save(ctx, current);
+        final StatsSnapshot current = new StatsSnapshot(currentMonth, Instant.now(), raw);
+        final Optional<StatsSnapshot> latest = snapshots.loadLatest();
+        snapshots.save(current);
 
         if (latest.isEmpty()) {
-            LOGGER.info("First snapshot saved for {}. Reviens le mois prochain pour ton premier Wrapped !", ctx.id());
+            LOGGER.info("First snapshot saved. Come back next month for your first Wrapped!");
             return;
         }
 
         final StatsSnapshot prev = latest.get();
         if (prev.month().equals(currentMonth)) {
-            LOGGER.info("Snapshot updated for current month {} ({}).", currentMonth, ctx.id());
+            LOGGER.info("Snapshot updated for current month {}.", currentMonth);
             return;
         }
 
@@ -74,7 +62,6 @@ public final class McWrappedClient implements ClientModInitializer {
 
     private static void logDelta(final YearMonth month, final MonthlyDelta delta) {
         LOGGER.info("=== Wrapped recap for {} ===", month);
-        LOGGER.info("Context: {}", delta.contextId());
 
         final Map<String, Long> custom = delta.deltas().getOrDefault("minecraft:custom", Map.of());
         final long playTicks = custom.getOrDefault("minecraft:play_time", 0L);

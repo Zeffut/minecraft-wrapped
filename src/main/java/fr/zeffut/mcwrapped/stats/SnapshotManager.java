@@ -19,10 +19,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * Persists a single global snapshot per month at {@code <gameDir>/wrapped/snapshot-YYYY-MM.json}.
+ *
+ * <p>The Wrapped concept covers the player's whole game, not a specific world or server — so we
+ * keep a single snapshot lineage rather than per-context buckets.
+ */
 public final class SnapshotManager {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final String FILE_PREFIX = "snapshot-";
+    private static final String FILE_SUFFIX = ".json";
 
     private final Path root;
 
@@ -34,60 +42,56 @@ public final class SnapshotManager {
         this.root = root;
     }
 
-    public Path contextDir(final StatsContext context) {
-        return root.resolve(context.id());
+    public Path snapshotPath(final YearMonth month) {
+        return root.resolve(FILE_PREFIX + month.format(MONTH_FMT) + FILE_SUFFIX);
     }
 
-    public Path snapshotPath(final StatsContext context, final YearMonth month) {
-        return contextDir(context).resolve("snapshot-" + month.format(MONTH_FMT) + ".json");
-    }
-
-    public void save(final StatsContext context, final StatsSnapshot snapshot) {
+    public void save(final StatsSnapshot snapshot) {
         try {
-            Files.createDirectories(contextDir(context));
-            final JsonObject root = new JsonObject();
-            root.addProperty("month", snapshot.month().format(MONTH_FMT));
-            root.addProperty("context", snapshot.contextId());
-            root.addProperty("captured_at", snapshot.capturedAt().toString());
-            root.add("stats_raw", GSON.toJsonTree(snapshot.statsRaw()));
-            Files.writeString(snapshotPath(context, snapshot.month()), GSON.toJson(root));
-            McWrappedClient.LOGGER.info("Saved snapshot {} for context {}", snapshot.month(), context.id());
+            Files.createDirectories(root);
+            final JsonObject obj = new JsonObject();
+            obj.addProperty("month", snapshot.month().format(MONTH_FMT));
+            obj.addProperty("captured_at", snapshot.capturedAt().toString());
+            obj.add("stats_raw", GSON.toJsonTree(snapshot.statsRaw()));
+            Files.writeString(snapshotPath(snapshot.month()), GSON.toJson(obj));
+            McWrappedClient.LOGGER.info("Saved snapshot for {}", snapshot.month());
         } catch (final IOException e) {
             McWrappedClient.LOGGER.warn("Failed to save snapshot: {}", e.getMessage());
         }
     }
 
-    public Optional<StatsSnapshot> load(final StatsContext context, final YearMonth month) {
-        final Path file = snapshotPath(context, month);
+    public Optional<StatsSnapshot> load(final YearMonth month) {
+        final Path file = snapshotPath(month);
         if (!Files.exists(file)) {
             return Optional.empty();
         }
         try {
             final JsonObject obj = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
             final YearMonth m = YearMonth.parse(obj.get("month").getAsString(), MONTH_FMT);
-            final String ctx = obj.get("context").getAsString();
             final Instant ts = Instant.parse(obj.get("captured_at").getAsString());
             final Map<String, Map<String, Long>> raw = parseRaw(obj.getAsJsonObject("stats_raw"));
-            return Optional.of(new StatsSnapshot(m, ctx, ts, raw));
+            return Optional.of(new StatsSnapshot(m, ts, raw));
         } catch (final IOException e) {
             McWrappedClient.LOGGER.warn("Failed to load snapshot {}: {}", file, e.getMessage());
             return Optional.empty();
         }
     }
 
-    public Optional<StatsSnapshot> loadLatest(final StatsContext context) {
-        final Path dir = contextDir(context);
-        if (!Files.isDirectory(dir)) {
+    public Optional<StatsSnapshot> loadLatest() {
+        if (!Files.isDirectory(root)) {
             return Optional.empty();
         }
-        try (final Stream<Path> stream = Files.list(dir)) {
+        try (final Stream<Path> stream = Files.list(root)) {
             return stream
-                    .filter(p -> p.getFileName().toString().startsWith("snapshot-"))
+                    .filter(p -> {
+                        final String name = p.getFileName().toString();
+                        return name.startsWith(FILE_PREFIX) && name.endsWith(FILE_SUFFIX);
+                    })
                     .max(Comparator.comparing(p -> p.getFileName().toString()))
                     .flatMap(p -> {
                         final String name = p.getFileName().toString();
-                        final String monthStr = name.substring("snapshot-".length(), name.length() - ".json".length());
-                        return load(context, YearMonth.parse(monthStr, MONTH_FMT));
+                        final String monthStr = name.substring(FILE_PREFIX.length(), name.length() - FILE_SUFFIX.length());
+                        return load(YearMonth.parse(monthStr, MONTH_FMT));
                     });
         } catch (final IOException e) {
             return Optional.empty();

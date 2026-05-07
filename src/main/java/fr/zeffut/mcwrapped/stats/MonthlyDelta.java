@@ -8,7 +8,6 @@ import java.util.Set;
 
 public record MonthlyDelta(
         YearMonth month,
-        String contextId,
         Map<String, Map<String, Long>> deltas
 ) {
 
@@ -35,7 +34,7 @@ public record MonthlyDelta(
                 result.put(category, diff);
             }
         }
-        return new MonthlyDelta(after.month(), after.contextId(), result);
+        return new MonthlyDelta(after.month(), result);
     }
 
     public long total(final String category) {
