@@ -1,6 +1,8 @@
 package fr.zeffut.mcwrapped;
 
 import fr.zeffut.mcwrapped.stats.MonthlyDelta;
+import fr.zeffut.mcwrapped.stats.MultiplayerTracker;
+import fr.zeffut.mcwrapped.stats.ServerPlayTimeTracker;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
@@ -16,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneId;
-import java.util.Map;
 import java.util.Optional;
 
 public final class McWrappedClient implements ClientModInitializer {
@@ -24,14 +25,18 @@ public final class McWrappedClient implements ClientModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private final SnapshotManager snapshots = new SnapshotManager();
+    private final ServerPlayTimeTracker serverTracker = new ServerPlayTimeTracker();
+    private final MultiplayerTracker multiplayerTracker = new MultiplayerTracker();
 
     @Override
     public void onInitializeClient() {
         LOGGER.info("Minecraft Wrapped initialized.");
 
+        serverTracker.register();
+        multiplayerTracker.register();
         ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndFinalize);
         WrappedTitleButton.register(snapshots);
-        WrappedCommand.register();
+        WrappedCommand.register(snapshots);
     }
 
     /**
@@ -39,14 +44,19 @@ public final class McWrappedClient implements ClientModInitializer {
      * If the previous snapshot belongs to an earlier month, finalize a wrapped file for it.
      */
     private void captureAndFinalize(final MinecraftClient client) {
-        final Optional<Map<String, Map<String, Long>>> rawOpt = StatsReader.readAggregated(client);
-        if (rawOpt.isEmpty() || rawOpt.get().isEmpty()) {
+        final Optional<StatsReader.Aggregated> aggOpt = StatsReader.readAggregated(client, serverTracker);
+        if (aggOpt.isEmpty() || aggOpt.get().total().isEmpty()) {
             LOGGER.info("No stats data found yet — come back next month for your first Wrapped!");
             return;
         }
 
         final YearMonth currentMonth = YearMonth.now(ZoneId.systemDefault());
-        final StatsSnapshot current = new StatsSnapshot(currentMonth, Instant.now(), rawOpt.get());
+        final StatsSnapshot current = new StatsSnapshot(currentMonth, Instant.now(),
+                aggOpt.get().total(), aggOpt.get().perWorldPlayTime(),
+                multiplayerTracker.playersSeenCount(),
+                multiplayerTracker.messagesSent(),
+                multiplayerTracker.commandsSent(),
+                multiplayerTracker.serversVisitedCount());
         final Optional<StatsSnapshot> latest = snapshots.loadLatestSnapshot();
         snapshots.saveSnapshot(current);
 

@@ -87,7 +87,7 @@ public final class IntroCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final float partial) {
+    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 

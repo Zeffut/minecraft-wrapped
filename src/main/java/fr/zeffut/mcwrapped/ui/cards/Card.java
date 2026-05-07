@@ -11,8 +11,11 @@ public interface Card {
     void tick(int width, int height);
 
     /** Called every frame. {@code partialTick} is the fraction of the next tick already elapsed. */
-    void render(DrawContext context, int width, int height, float partialTick);
+    void render(DrawContext context, int width, int height, int mouseX, int mouseY, float partialTick);
 
     /** When true, the host screen closes the card. */
     boolean isDone();
+
+    /** Optional click handling. Return true if consumed. */
+    default boolean mouseClicked(final double mouseX, final double mouseY, final int button) { return false; }
 }
