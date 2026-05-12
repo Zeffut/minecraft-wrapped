@@ -39,7 +39,7 @@ public final class ArchetypeCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f));
+                PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f));
         started = true;
     }
 
@@ -54,12 +54,12 @@ public final class ArchetypeCard implements Card {
             if (ticks == DRUM_BEATS[i]) {
                 final float pitch = 0.8f + i * 0.15f;
                 MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f));
+                        PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f));
             }
         }
         if (ticks == FLIP_START + FLIP_DURATION / 2) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+                    PositionedSoundInstance.master(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
         }
     }
 
@@ -139,9 +139,9 @@ public final class ArchetypeCard implements Card {
             scaleX *= 1f + 0.01f * (float) Math.sin((now - FLIP_START - FLIP_DURATION) * 0.15f);
         }
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(cx, cy);
-        ctx.getMatrices().scale(Math.max(0.001f, Math.abs(scaleX)), 1f);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(cx, cy, 0f);
+        ctx.getMatrices().scale(Math.max(0.001f, Math.abs(scaleX)), 1f, 1f);
         // Card background.
         final int bgColor = showBack ? 0xFF12122A : 0xFF1A1A40;
         ctx.fill(-cardW / 2, -cardH / 2, cardW / 2, cardH / 2, bgColor);
@@ -154,7 +154,7 @@ public final class ArchetypeCard implements Card {
         } else {
             renderCardFront(ctx, tr);
         }
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderCardFront(final DrawContext ctx, final TextRenderer tr) {
@@ -162,10 +162,10 @@ public final class ArchetypeCard implements Card {
         final String q = "?";
         final float scale = 6f;
         final int width = (int) (tr.getWidth(q) * scale);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(scale, scale, 1f);
         ctx.drawText(tr, q, (int) ((-width / 2f) / scale), (int) ((-5 * scale / 2f) / scale), 0xFFCBD5E1, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderCardBack(final DrawContext ctx, final TextRenderer tr) {
@@ -179,13 +179,13 @@ public final class ArchetypeCard implements Card {
             scale -= 0.1f;
             w = (int) (tr.getWidth(name) * scale);
         }
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(scale, scale, 1f);
         ctx.drawText(tr, name,
                 (int) ((-w / 2f) / scale),
                 (int) ((-22) / scale),
                 CardEffects.ACCENT_GOLD, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         // Tagline.
         final int tw = tr.getWidth(tagline);

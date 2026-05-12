@@ -44,7 +44,7 @@ public final class TopMobCard implements Card {
         sparkles = new CardEffects.Sparkles(16, width, height);
         eggStack = top.map(e -> spawnEggFor(e.getKey())).orElse(ItemStack.EMPTY);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f));
+                PositionedSoundInstance.master(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f));
         started = true;
     }
 
@@ -55,7 +55,7 @@ public final class TopMobCard implements Card {
         sparkles.tick(width, height);
         if (ticks == EGG_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f));
+                    PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f));
         }
     }
 
@@ -104,13 +104,13 @@ public final class TopMobCard implements Card {
         final int cy = height / 2 - 30;
         final float rotation = now * 0.04f;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(cx, cy);
-        ctx.getMatrices().rotate(rotation);
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(cx, cy, 0f);
+        ctx.getMatrices().multiply(new org.joml.Quaternionf().rotateZ(rotation));
+        ctx.getMatrices().scale(scale, scale, 1f);
         // Item is 16x16 — center on origin.
         ctx.drawItem(eggStack, -8, -8);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderLabel(final DrawContext ctx, final TextRenderer tr, final int width, final int height,
@@ -128,10 +128,10 @@ public final class TopMobCard implements Card {
         final int nameX = width / 2 - nameWidth / 2;
         final int nameY = height / 2 + 70 + yOffset;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(nameScale, nameScale, 1f);
         ctx.drawText(tr, name, (int) (nameX / nameScale), (int) (nameY / nameScale), nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         // Count.
         final String count = entry.getValue() + " killed";

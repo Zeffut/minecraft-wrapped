@@ -59,7 +59,7 @@ public final class DistanceCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(16, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_HORSE_GALLOP, 1.0f, 0.4f));
+                PositionedSoundInstance.master(SoundEvents.ENTITY_HORSE_GALLOP, 1.0f, 0.4f));
         started = true;
     }
 
@@ -103,13 +103,13 @@ public final class DistanceCard implements Card {
         final int alpha = (int) (CardEffects.clamp01(t * 1.5f) * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(scale, scale, 1f);
         ctx.drawText(tr, text,
                 (int) ((width / 2f - textWidth * scale / 2f) / scale),
                 (int) ((height / 2f - 60 - 5 * scale / 2f) / scale),
                 color, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderBars(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {

@@ -46,7 +46,7 @@ public final class DimensionCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f));
         started = true;
     }
 
@@ -105,13 +105,13 @@ public final class DimensionCard implements Card {
         final String rank = "#" + (index + 1);
         final float rankScale = 3.4f;
         final int rankColor = (alpha << 24) | (CardEffects.ACCENT_GOLD & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(rankScale, rankScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(rankScale, rankScale, 1f);
         ctx.drawText(tr, rank,
                 (int) (x / rankScale),
                 (int) ((yBase + 12) / rankScale),
                 rankColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         // Dim color swatch.
         final int swatchX = x + 78;
@@ -122,13 +122,13 @@ public final class DimensionCard implements Card {
         final String name = displayDimensionName(entry.getKey());
         final float nameScale = 1.7f;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(nameScale, nameScale, 1f);
         ctx.drawText(tr, name,
                 (int) ((swatchX + 48) / nameScale),
                 (int) ((yBase + 14) / nameScale),
                 nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         final long pct = total > 0 ? Math.round(entry.getValue() * 100.0 / total) : 0;
         final long minutes = entry.getValue() / 20 / 60;

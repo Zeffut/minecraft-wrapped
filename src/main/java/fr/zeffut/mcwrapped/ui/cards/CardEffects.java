@@ -60,11 +60,11 @@ public final class CardEffects {
         final float dy = y2 - y1;
         final float len = (float) Math.sqrt(dx * dx + dy * dy);
         final float angle = (float) Math.atan2(dy, dx);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(x1, y1);
-        ctx.getMatrices().rotate(angle);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x1, y1, 0f);
+        ctx.getMatrices().multiply(new org.joml.Quaternionf().rotateZ(angle));
         ctx.fill(0, -thickness / 2, (int) len, thickness - thickness / 2, color);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     public static void drawRectBorder(final DrawContext ctx, final int x0, final int y0, final int x1, final int y1,

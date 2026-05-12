@@ -55,7 +55,7 @@ public final class FinalCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(22, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+                PositionedSoundInstance.master(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
         started = true;
     }
 
@@ -131,10 +131,10 @@ public final class FinalCard implements Card {
         final int monthX = width / 2 - monthWidth / 2;
         final int monthY = yKicker + 16;
         final int monthColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(scale, scale, 1f);
         ctx.drawText(tr, monthLabel, (int) (monthX / scale), (int) (monthY / scale), monthColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderTiles(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
@@ -184,13 +184,13 @@ public final class FinalCard implements Card {
             vw = (int) (tr.getWidth(tile.value) * vScale);
         }
         final int valueColor = (alpha << 24) | (tile.color & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(vScale, vScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(vScale, vScale, 1f);
         ctx.drawText(tr, tile.value,
                 (int) ((x + 10) / vScale),
                 (int) ((y + 24) / vScale),
                 valueColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private void renderButtons(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now,
@@ -267,7 +267,7 @@ public final class FinalCard implements Card {
                     toastMessage = "Copied to clipboard!";
                     toastStartTick = ticks;
                     MinecraftClient.getInstance().getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
+                            PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
@@ -290,7 +290,7 @@ public final class FinalCard implements Card {
                     toastMessage = "Saved to screenshots/wrapped/" + file.getFileName();
                     toastStartTick = ticks;
                     client.getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f));
+                            PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f));
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Image export failed", e);

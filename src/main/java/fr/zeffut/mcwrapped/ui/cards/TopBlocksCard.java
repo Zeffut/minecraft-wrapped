@@ -45,7 +45,7 @@ public final class TopBlocksCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f));
         started = true;
     }
 
@@ -57,7 +57,7 @@ public final class TopBlocksCard implements Card {
         for (int i = 0; i < top.size(); i++) {
             if (ticks == FIRST_ROW_START + i * ROW_STAGGER) {
                 MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.ui(SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f));
+                        PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f));
             }
         }
     }
@@ -121,23 +121,23 @@ public final class TopBlocksCard implements Card {
         final String rank = "#" + (index + 1);
         final float rankScale = 3.4f;
         final int rankColor = (alpha << 24) | (CardEffects.ACCENT_GOLD & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(rankScale, rankScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(rankScale, rankScale, 1f);
         ctx.drawText(tr, rank,
                 (int) (x / rankScale),
                 (int) ((yBase + 12) / rankScale),
                 rankColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         // Real block texture, 32x32 (item is 16, scale 2).
         final int iconCx = x + 110;
         final int iconCy = yBase + rowHeight / 2 - 6;
         if (!icon.isEmpty()) {
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().translate(iconCx, iconCy);
-            ctx.getMatrices().scale(2.4f, 2.4f);
+            ctx.getMatrices().push();
+            ctx.getMatrices().translate(iconCx, iconCy, 0f);
+            ctx.getMatrices().scale(2.4f, 2.4f, 1f);
             ctx.drawItem(icon, -8, -8);
-            ctx.getMatrices().popMatrix();
+            ctx.getMatrices().pop();
         }
 
         // Block name.
@@ -145,13 +145,13 @@ public final class TopBlocksCard implements Card {
         final Text name = blockName(entry.getKey());
         final float nameScale = 1.7f;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(nameScale, nameScale, 1f);
         ctx.drawText(tr, name,
                 (int) (textX / nameScale),
                 (int) ((yBase + 14) / nameScale),
                 nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
 
         // Count, right-aligned.
         final String count = formatCount(entry.getValue());
@@ -159,13 +159,13 @@ public final class TopBlocksCard implements Card {
         final int countWidth = (int) (tr.getWidth(count) * countScale);
         final int countX = width / 2 + 240 - countWidth - 8;
         final int countColor = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(countScale, countScale);
+        ctx.getMatrices().push();
+        ctx.getMatrices().scale(countScale, countScale, 1f);
         ctx.drawText(tr, count,
                 (int) (countX / countScale),
                 (int) ((yBase + 12) / countScale),
                 countColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.getMatrices().pop();
     }
 
     private static ItemStack stackFor(final String blockId) {
