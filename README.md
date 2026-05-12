@@ -44,19 +44,32 @@ The recap only includes cards that are relevant to your data. Played 5 minutes? 
 
 ## Install
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for **Minecraft 1.21.11**.
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for your target Minecraft version (1.21.1 – 1.21.11).
 2. Drop **[Fabric API](https://modrinth.com/mod/fabric-api)** into your `mods/` folder.
-3. Drop the `minecraft-wrapped-*.jar` from the [latest release](https://github.com/Zeffut/minecraft-wrapped/releases) into the same `mods/` folder.
+3. Grab the matching `minecraft-wrapped-*.jar` from the [latest release](https://github.com/Zeffut/minecraft-wrapped/releases) (see the version table below) and drop it in the same `mods/` folder.
 4. Launch the game.
+
+### Supported Minecraft versions
+
+Each version has its own jar on the [releases page](https://github.com/Zeffut/minecraft-wrapped/releases) and its own git branch:
+
+| MC version | Branch | Jar |
+|---|---|---|
+| **1.21.11** | `main` | `minecraft-wrapped-1.0.0.jar` |
+| 1.21.10 | `1.21.10` | `minecraft-wrapped-1.0.0+1.21.10.jar` |
+| 1.21.8 | `1.21.8` | `minecraft-wrapped-1.0.0+1.21.8.jar` |
+| 1.21.6 | `1.21.6` | `minecraft-wrapped-1.0.0+1.21.6.jar` |
+| 1.21.4 | `1.21.4` | `minecraft-wrapped-1.0.0+1.21.4.jar` |
+| 1.21.1 | `1.21.1` | `minecraft-wrapped-1.0.0+1.21.1.jar` |
 
 ### Loader compatibility
 
 | Loader | Status | How |
 |---|---|---|
 | **Fabric** | ✅ Native | install as above |
-| **Quilt** | ✅ Native | drop the same jar in Quilt's `mods/` folder. Quilt loads Fabric mods directly, just install [QSL](https://modrinth.com/mod/qsl) (Quilted Fabric API) instead of Fabric API |
-| **NeoForge** | ✅ Via [Sinytra Connector](https://modrinth.com/mod/connector) | install Sinytra Connector + Forgified Fabric API on NeoForge, then drop the Wrapped jar in `mods/` |
-| **Forge** | ❌ Not supported | NeoForge with Sinytra is the modern path |
+| **Quilt** | ✅ Native | drop the same jar in Quilt's `mods/` folder. Quilt loads Fabric mods directly — install [QSL](https://modrinth.com/mod/qsl) (Quilted Fabric API) instead of Fabric API |
+| **NeoForge** | ✅ Via [Sinytra Connector](https://modrinth.com/mod/connector) | install Sinytra Connector + Forgified Fabric API on NeoForge, then drop the Wrapped jar in `mods/`. All features work. |
+| **Forge** | ❌ Not supported | NeoForge + Sinytra is the modern path |
 
 The mod runs silently in the background. On the **first day of every month**, when you launch the game, a *Your X Wrapped is ready* button appears on the title screen.
 
