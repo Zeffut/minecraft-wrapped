@@ -49,6 +49,15 @@ The recap only includes cards that are relevant to your data. Played 5 minutes? 
 3. Drop the `minecraft-wrapped-*.jar` from the [latest release](https://github.com/Zeffut/minecraft-wrapped/releases) into the same `mods/` folder.
 4. Launch the game.
 
+### Loader compatibility
+
+| Loader | Status | How |
+|---|---|---|
+| **Fabric** | ✅ Native | install as above |
+| **Quilt** | ✅ Native | drop the same jar in Quilt's `mods/` folder. Quilt loads Fabric mods directly, just install [QSL](https://modrinth.com/mod/qsl) (Quilted Fabric API) instead of Fabric API |
+| **NeoForge** | ✅ Via [Sinytra Connector](https://modrinth.com/mod/connector) | install Sinytra Connector + Forgified Fabric API on NeoForge, then drop the Wrapped jar in `mods/` |
+| **Forge** | ❌ Not supported | NeoForge with Sinytra is the modern path |
+
 The mod runs silently in the background. On the **first day of every month**, when you launch the game, a *Your X Wrapped is ready* button appears on the title screen.
 
 ## Commands

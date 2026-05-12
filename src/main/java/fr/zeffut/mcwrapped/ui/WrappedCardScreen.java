@@ -5,8 +5,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
 
@@ -29,6 +31,7 @@ public final class WrappedCardScreen extends Screen {
     private int currentIndex = 0;
     private boolean currentStarted = false;
     private int transitionTicks = -1;
+    private boolean paused = false;
 
     public WrappedCardScreen(@Nullable final Screen parent, final List<Card> cards) {
         super(Text.literal("Minecraft Wrapped"));
@@ -63,6 +66,7 @@ public final class WrappedCardScreen extends Screen {
             close();
             return;
         }
+        if (paused) return;
 
         final int vw = virtualWidth();
         final int vh = virtualHeight();
@@ -114,6 +118,32 @@ public final class WrappedCardScreen extends Screen {
     @Override
     public void renderBackground(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
         // Cards draw their own background.
+    }
+
+    @Override
+    public boolean keyPressed(final KeyInput input) {
+        final int key = input.key();
+        if (cards.isEmpty()) return super.keyPressed(input);
+        if (key == GLFW.GLFW_KEY_SPACE) {
+            paused = !paused;
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_RIGHT) {
+            jumpToCard(currentIndex + 1);
+            return true;
+        }
+        if (key == GLFW.GLFW_KEY_LEFT) {
+            jumpToCard(currentIndex - 1);
+            return true;
+        }
+        return super.keyPressed(input);
+    }
+
+    private void jumpToCard(final int targetIndex) {
+        if (targetIndex < 0 || targetIndex >= cards.size()) return;
+        currentIndex = targetIndex;
+        transitionTicks = -1;
+        cards.get(currentIndex).start(MinecraftClient.getInstance(), virtualWidth(), virtualHeight());
     }
 
     @Override
