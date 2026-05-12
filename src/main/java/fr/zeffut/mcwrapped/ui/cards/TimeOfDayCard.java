@@ -50,7 +50,7 @@ public final class TimeOfDayCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 1.0f, 0.5f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 1.0f, 0.5f));
         started = true;
     }
 

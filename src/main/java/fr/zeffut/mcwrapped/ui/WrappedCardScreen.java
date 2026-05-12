@@ -2,10 +2,8 @@ package fr.zeffut.mcwrapped.ui;
 
 import fr.zeffut.mcwrapped.ui.cards.Card;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.input.KeyInput;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
@@ -121,22 +119,21 @@ public final class WrappedCardScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(final KeyInput input) {
-        final int key = input.key();
-        if (cards.isEmpty()) return super.keyPressed(input);
-        if (key == GLFW.GLFW_KEY_SPACE) {
+    public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
+        if (cards.isEmpty()) return super.keyPressed(keyCode, scanCode, modifiers);
+        if (keyCode == GLFW.GLFW_KEY_SPACE) {
             paused = !paused;
             return true;
         }
-        if (key == GLFW.GLFW_KEY_RIGHT) {
+        if (keyCode == GLFW.GLFW_KEY_RIGHT) {
             jumpToCard(currentIndex + 1);
             return true;
         }
-        if (key == GLFW.GLFW_KEY_LEFT) {
+        if (keyCode == GLFW.GLFW_KEY_LEFT) {
             jumpToCard(currentIndex - 1);
             return true;
         }
-        return super.keyPressed(input);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     private void jumpToCard(final int targetIndex) {
@@ -147,13 +144,13 @@ public final class WrappedCardScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(final Click click, final boolean doubled) {
-        if (cards.isEmpty() || transitionTicks >= 0) return super.mouseClicked(click, doubled);
+    public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+        if (cards.isEmpty() || transitionTicks >= 0) return super.mouseClicked(mouseX, mouseY, button);
         final float scale = renderScale();
-        final double vx = click.x() / scale;
-        final double vy = click.y() / scale;
-        if (cards.get(currentIndex).mouseClicked(vx, vy, click.button())) return true;
-        return super.mouseClicked(click, doubled);
+        final double vx = mouseX / scale;
+        final double vy = mouseY / scale;
+        if (cards.get(currentIndex).mouseClicked(vx, vy, button)) return true;
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

@@ -41,7 +41,7 @@ public final class TopWorldCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_CHEST_OPEN, 1.4f, 0.4f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_CHEST_OPEN, 1.4f, 0.4f));
         started = true;
     }
 

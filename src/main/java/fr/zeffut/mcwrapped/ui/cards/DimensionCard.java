@@ -46,7 +46,7 @@ public final class DimensionCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f));
         started = true;
     }
 

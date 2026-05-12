@@ -45,7 +45,7 @@ public final class LongestSessionCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(16, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.9f, 0.4f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.9f, 0.4f));
         started = true;
     }
 

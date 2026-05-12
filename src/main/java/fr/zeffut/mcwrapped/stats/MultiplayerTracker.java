@@ -75,7 +75,7 @@ public final class MultiplayerTracker {
         if (++pollCounter >= POLL_INTERVAL_TICKS) {
             pollCounter = 0;
             for (final PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
-                final UUID uuid = entry.getProfile().id();
+                final UUID uuid = entry.getProfile().getId();
                 if (uuid != null && !uuid.equals(selfUuid)) {
                     playersSeen.add(uuid);
                 }

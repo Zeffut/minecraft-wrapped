@@ -35,7 +35,7 @@ public final class SocialCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.4f, 0.5f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.4f, 0.5f));
         started = true;
     }
 

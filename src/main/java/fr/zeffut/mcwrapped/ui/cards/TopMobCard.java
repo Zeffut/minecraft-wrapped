@@ -44,7 +44,7 @@ public final class TopMobCard implements Card {
         sparkles = new CardEffects.Sparkles(16, width, height);
         eggStack = top.map(e -> spawnEggFor(e.getKey())).orElse(ItemStack.EMPTY);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f));
+                PositionedSoundInstance.master(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f));
         started = true;
     }
 
@@ -55,7 +55,7 @@ public final class TopMobCard implements Card {
         sparkles.tick(width, height);
         if (ticks == EGG_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f));
+                    PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f));
         }
     }
 

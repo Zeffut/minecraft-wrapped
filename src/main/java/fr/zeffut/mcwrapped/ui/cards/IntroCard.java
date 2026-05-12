@@ -62,7 +62,7 @@ public final class IntroCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f));
+                PositionedSoundInstance.master(SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f));
         sparkles = new Sparkle[18];
         for (int i = 0; i < sparkles.length; i++) {
             sparkles[i] = new Sparkle(rng, width, height);
@@ -78,11 +78,11 @@ public final class IntroCard implements Card {
 
         if (ticks == LETTER_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f));
+                    PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f));
         }
         if (ticks == FOOTER_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f));
+                    PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f));
         }
     }
 
