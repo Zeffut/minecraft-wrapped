@@ -55,7 +55,7 @@ public final class FinalCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(22, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+                PositionedSoundInstance.master(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
         started = true;
     }
 
@@ -267,7 +267,7 @@ public final class FinalCard implements Card {
                     toastMessage = "Copied to clipboard!";
                     toastStartTick = ticks;
                     MinecraftClient.getInstance().getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
+                            PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
@@ -290,7 +290,7 @@ public final class FinalCard implements Card {
                     toastMessage = "Saved to screenshots/wrapped/" + file.getFileName();
                     toastStartTick = ticks;
                     client.getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f));
+                            PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f));
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Image export failed", e);

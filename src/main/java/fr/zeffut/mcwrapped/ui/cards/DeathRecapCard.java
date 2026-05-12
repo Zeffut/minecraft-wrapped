@@ -38,7 +38,7 @@ public final class DeathRecapCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(8, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_HURT, 0.7f, 0.6f));
+                PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_HURT, 0.7f, 0.6f));
         started = true;
     }
 
@@ -49,11 +49,11 @@ public final class DeathRecapCard implements Card {
         sparkles.tick(width, height);
         if (deaths == 0 && ticks == COUNTER_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f));
+                    PositionedSoundInstance.master(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f));
         }
         if (deaths > 0 && ticks == COUNTER_START) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f));
+                    PositionedSoundInstance.master(SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f));
         }
     }
 

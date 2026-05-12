@@ -39,7 +39,7 @@ public final class ArchetypeCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f));
+                PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f));
         started = true;
     }
 
@@ -54,12 +54,12 @@ public final class ArchetypeCard implements Card {
             if (ticks == DRUM_BEATS[i]) {
                 final float pitch = 0.8f + i * 0.15f;
                 MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f));
+                        PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f));
             }
         }
         if (ticks == FLIP_START + FLIP_DURATION / 2) {
             MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+                    PositionedSoundInstance.master(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
         }
     }
 

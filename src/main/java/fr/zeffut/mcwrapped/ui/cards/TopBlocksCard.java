@@ -45,7 +45,7 @@ public final class TopBlocksCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f));
+                PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f));
         started = true;
     }
 
@@ -57,7 +57,7 @@ public final class TopBlocksCard implements Card {
         for (int i = 0; i < top.size(); i++) {
             if (ticks == FIRST_ROW_START + i * ROW_STAGGER) {
                 MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.ui(SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f));
+                        PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f));
             }
         }
     }
