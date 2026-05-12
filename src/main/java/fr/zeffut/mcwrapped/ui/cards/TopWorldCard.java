@@ -159,17 +159,17 @@ public final class TopWorldCard implements Card {
         final String worldName = WorldKey.displayName(worldKey);
         final boolean isServer = WorldKey.isServer(worldKey);
 
-        // Small SOURCE badge.
+        // Small SOURCE badge, floating above the frame as a tag chip.
         final String badge = WorldKey.badge(worldKey);
         final int badgeColor = (alpha << 24) | ((isServer ? CardEffects.ACCENT_INDIGO : CardEffects.ACCENT_GREEN) & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(badge)), width / 2, height / 2 - 56 + yOffset, badgeColor);
+        ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(badge)), width / 2, height / 2 - 78 + yOffset, badgeColor);
 
-        // World name (truncated if too long).
+        // World name (truncated if too long). Vertically centered with frame center (height/2 - 5).
         final String displayName = worldName.length() > 22 ? worldName.substring(0, 21) + "…" : worldName;
         final float nameScale = 2.6f;
         final int nameWidth = (int) (tr.getWidth(displayName) * nameScale);
         final int nameX = width / 2 - nameWidth / 2;
-        final int nameY = height / 2 - 32 + yOffset;
+        final int nameY = height / 2 - 24 + yOffset;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
         ctx.getMatrices().push();
         ctx.getMatrices().scale(nameScale, nameScale, 1f);
@@ -182,7 +182,7 @@ public final class TopWorldCard implements Card {
                 ? (minutes / 60) + "h " + String.format("%02d", minutes % 60) + "m here"
                 : minutes + "m here";
         final int timeColor = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(timeText), width / 2, nameY + 32, timeColor);
+        ctx.drawCenteredTextWithShadow(tr, Text.literal(timeText), width / 2, nameY + 30, timeColor);
     }
 
     private void renderShareBar(final DrawContext ctx, final TextRenderer tr, final int width, final int height,
