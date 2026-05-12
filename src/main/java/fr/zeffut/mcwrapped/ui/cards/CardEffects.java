@@ -91,6 +91,9 @@ public final class CardEffects {
         if (now <= holdEnd) return;
         final float t = clamp01((now - holdEnd) / (float) duration);
         final int alpha = (int) (t * 255) & 0xFF;
+        // Start a new render layer so the overlay sits on top of any deferred batches
+        // (block textures, spawn eggs, crafted item icons) that would otherwise show through.
+        ctx.createNewRootLayer();
         ctx.fill(0, 0, width, height, (alpha << 24));
     }
 
