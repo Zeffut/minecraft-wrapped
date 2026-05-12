@@ -51,16 +51,16 @@ The recap only includes cards that are relevant to your data. Played 5 minutes? 
 
 ### Supported Minecraft versions
 
-Each version has its own jar on the [releases page](https://github.com/Zeffut/minecraft-wrapped/releases) and its own git branch:
-
-| MC version | Branch | Jar |
+| MC version | Branch | Status |
 |---|---|---|
-| **1.21.11** | `main` | `minecraft-wrapped-1.0.0.jar` |
-| 1.21.10 | `1.21.10` | `minecraft-wrapped-1.0.0+1.21.10.jar` |
-| 1.21.8 | `1.21.8` | `minecraft-wrapped-1.0.0+1.21.8.jar` |
-| 1.21.6 | `1.21.6` | `minecraft-wrapped-1.0.0+1.21.6.jar` |
-| 1.21.4 | `1.21.4` | `minecraft-wrapped-1.0.0+1.21.4.jar` |
-| 1.21.1 | `1.21.1` | `minecraft-wrapped-1.0.0+1.21.1.jar` |
+| **1.21.11** | `main` | ✅ tested, published |
+| 1.21.10 | `1.21.10` | 🧪 backport ready, not yet validated end-to-end |
+| 1.21.8 | `1.21.8` | 🧪 backport ready, not yet validated |
+| 1.21.6 | `1.21.6` | 🧪 backport ready, not yet validated |
+| 1.21.4 | `1.21.4` | 🧪 backport ready, not yet validated |
+| 1.21.1 | `1.21.1` | 🧪 backport ready, not yet validated |
+
+The 🧪 versions are compiled and launch cleanly, but the full card sequence hasn't been visually verified yet. To use one, clone the matching branch and run `./gradlew build`.
 
 ### Loader compatibility
 
