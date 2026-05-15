@@ -63,6 +63,9 @@ public final class IntroCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         client.getSoundManager().play(
                 PositionedSoundInstance.master(SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f));
+        // Reset shared sparkle timeline so a second wrapped in the same session doesn't inherit a
+        // stale tick offset (which would freeze sparkles at alpha=0 until the counter caught up).
+        Sparkle.globalTick = 0;
         sparkles = new Sparkle[18];
         for (int i = 0; i < sparkles.length; i++) {
             sparkles[i] = new Sparkle(rng, width, height);

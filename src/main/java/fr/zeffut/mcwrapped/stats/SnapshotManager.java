@@ -74,16 +74,20 @@ public final class SnapshotManager {
         if (!Files.exists(file)) return Optional.empty();
         try {
             final JsonObject obj = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            if (!obj.has("month") || !obj.has("captured_at")) {
+                McWrappedClient.LOGGER.warn("Snapshot {} missing required fields, ignoring.", file);
+                return Optional.empty();
+            }
             final YearMonth m = YearMonth.parse(obj.get("month").getAsString(), MONTH_FMT);
             final Instant ts = Instant.parse(obj.get("captured_at").getAsString());
-            final Map<String, Map<String, Long>> raw = parseStatsRaw(obj.getAsJsonObject("stats_raw"));
+            final Map<String, Map<String, Long>> raw = parseStatsRaw(obj.has("stats_raw") ? obj.getAsJsonObject("stats_raw") : null);
             final Map<String, Long> perWorld = parseLongMap(obj.has("per_world_play_time") ? obj.getAsJsonObject("per_world_play_time") : null);
             final int playersSeen = obj.has("players_seen_count") ? obj.get("players_seen_count").getAsInt() : 0;
             final long messages = obj.has("messages_sent") ? obj.get("messages_sent").getAsLong() : 0L;
             final long commands = obj.has("commands_sent") ? obj.get("commands_sent").getAsLong() : 0L;
             final int serversVisited = obj.has("servers_visited_count") ? obj.get("servers_visited_count").getAsInt() : 0;
             return Optional.of(new StatsSnapshot(m, ts, raw, perWorld, playersSeen, messages, commands, serversVisited));
-        } catch (final IOException e) {
+        } catch (final IOException | RuntimeException e) {
             McWrappedClient.LOGGER.warn("Failed to load snapshot {}: {}", file, e.getMessage());
             return Optional.empty();
         }
@@ -150,9 +154,13 @@ public final class SnapshotManager {
         if (!Files.exists(file)) return Optional.empty();
         try {
             final JsonObject obj = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+            if (!obj.has("month")) {
+                McWrappedClient.LOGGER.warn("Wrapped {} missing 'month' field, ignoring.", file);
+                return Optional.empty();
+            }
             final YearMonth m = YearMonth.parse(obj.get("month").getAsString(), MONTH_FMT);
             final boolean consumed = obj.has("consumed") && obj.get("consumed").getAsBoolean();
-            final Map<String, Map<String, Long>> deltas = parseStatsRaw(obj.getAsJsonObject("deltas"));
+            final Map<String, Map<String, Long>> deltas = parseStatsRaw(obj.has("deltas") ? obj.getAsJsonObject("deltas") : null);
             final Map<String, Long> perWorld = parseLongMap(obj.has("per_world_play_time_delta") ? obj.getAsJsonObject("per_world_play_time_delta") : null);
             final int playersMet = obj.has("players_met_delta") ? obj.get("players_met_delta").getAsInt() : 0;
             final long messages = obj.has("messages_sent_delta") ? obj.get("messages_sent_delta").getAsLong() : 0L;
@@ -160,7 +168,7 @@ public final class SnapshotManager {
             final int serversVisited = obj.has("servers_visited_delta") ? obj.get("servers_visited_delta").getAsInt() : 0;
             final MonthlyDelta delta = new MonthlyDelta(m, deltas, perWorld, playersMet, messages, commands, serversVisited);
             return Optional.of(new WrappedFile(m, delta, consumed));
-        } catch (final IOException e) {
+        } catch (final IOException | RuntimeException e) {
             McWrappedClient.LOGGER.warn("Failed to load wrapped {}: {}", file, e.getMessage());
             return Optional.empty();
         }
