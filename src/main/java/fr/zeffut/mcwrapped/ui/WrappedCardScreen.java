@@ -1,5 +1,7 @@
 package fr.zeffut.mcwrapped.ui;
 
+import fr.zeffut.mcwrapped.config.ConfigManager;
+import fr.zeffut.mcwrapped.config.TransitionStyle;
 import fr.zeffut.mcwrapped.ui.cards.Card;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -30,6 +32,8 @@ public final class WrappedCardScreen extends Screen {
     private boolean currentStarted = false;
     private int transitionTicks = -1;
     private boolean paused = false;
+    /** Sub-tick accumulator so non-integer speed multipliers (0.5x, 1.5x) keep working. */
+    private float speedAccumulator = 0f;
 
     public WrappedCardScreen(@Nullable final Screen parent, final List<Card> cards) {
         super(Text.literal("Minecraft Wrapped"));
@@ -67,6 +71,21 @@ public final class WrappedCardScreen extends Screen {
         }
         if (paused) return;
 
+        final float multiplier = ConfigManager.get().speedMultiplier;
+        if (multiplier <= 0.05f) {
+            // Instant mode: jump straight to the final card on the first frame.
+            jumpToCard(cards.size() - 1);
+            return;
+        }
+        speedAccumulator += multiplier;
+        int innerTicks = (int) speedAccumulator;
+        speedAccumulator -= innerTicks;
+        // Cap inner ticks to avoid runaway loops after a stutter.
+        if (innerTicks > 4) innerTicks = 4;
+        for (int i = 0; i < innerTicks; i++) tickOnce();
+    }
+
+    private void tickOnce() {
         final int vw = virtualWidth();
         final int vh = virtualHeight();
 
@@ -107,10 +126,37 @@ public final class WrappedCardScreen extends Screen {
         context.getMatrices().popMatrix();
 
         if (transitionTicks >= 0) {
-            final float t = (transitionTicks + delta) / (TRANSITION_HALF * 2);
-            final float coverage = t < 0.5f ? t * 2f : (1f - t) * 2f;
-            final int alpha = (int) (Math.max(0f, Math.min(1f, coverage)) * 255) & 0xFF;
-            context.fill(0, 0, width, height, alpha << 24);
+            renderTransition(context, delta);
+        }
+    }
+
+    private void renderTransition(final DrawContext context, final float delta) {
+        final float t = (transitionTicks + delta) / (TRANSITION_HALF * 2);
+        final float clampedT = Math.max(0f, Math.min(1f, t));
+        final float coverage = clampedT < 0.5f ? clampedT * 2f : (1f - clampedT) * 2f;
+        final TransitionStyle style = ConfigManager.get().transition;
+        switch (style) {
+            case CUT -> { /* no overlay — the advance-at-midpoint flips cards instantly */ }
+            case SLIDE -> {
+                // Black bar that wipes left→right during the first half, right→left during the second.
+                final int barX = (int) (clampedT < 0.5f
+                        ? clampedT * 2f * width
+                        : (1f - (clampedT - 0.5f) * 2f) * width);
+                final int barWidth = Math.max(width / 6, 40);
+                context.fill(barX - barWidth, 0, barX, height, 0xFF000000);
+                context.fill(barX, 0, barX + barWidth, height, 0xFF000000);
+            }
+            case ZOOM -> {
+                // Black rectangle expanding from the center then shrinking.
+                final int halfW = (int) (coverage * width / 2);
+                final int halfH = (int) (coverage * height / 2);
+                final int cx = width / 2, cy = height / 2;
+                context.fill(cx - halfW, cy - halfH, cx + halfW, cy + halfH, 0xFF000000);
+            }
+            case FADE -> {
+                final int alpha = (int) (coverage * 255) & 0xFF;
+                context.fill(0, 0, width, height, alpha << 24);
+            }
         }
     }
 

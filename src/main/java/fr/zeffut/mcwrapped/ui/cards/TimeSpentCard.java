@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -32,8 +33,7 @@ public final class TimeSpentCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(18, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), 1.5f, 0.4f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), 1.5f, 0.4f);
         started = true;
     }
 
@@ -49,7 +49,7 @@ public final class TimeSpentCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         renderClock(ctx, width, height, now);
@@ -101,7 +101,7 @@ public final class TimeSpentCard implements Card {
             final int handLen = (int) (radius * 0.85f);
             final int hx = (int) (cx + Math.cos(angle) * handLen);
             final int hy = (int) (cy + Math.sin(angle) * handLen);
-            final int handColor = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+            final int handColor = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
             CardEffects.drawRotatedLine(ctx, cx, cy, hx, hy, 3, handColor);
         }
 
@@ -144,7 +144,7 @@ public final class TimeSpentCard implements Card {
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
         final int alpha = (int) (ease * 255) & 0xFF;
-        final int color = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+        final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         final int yOffset = (int) ((1f - ease) * 6);
 
         final String hint = funFact(context.playTimeTicks());

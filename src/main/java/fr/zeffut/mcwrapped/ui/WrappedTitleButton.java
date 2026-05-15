@@ -27,6 +27,9 @@ public final class WrappedTitleButton {
     public static void register(final SnapshotManager snapshots) {
         ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
             if (!(screen instanceof TitleScreen)) return;
+            final fr.zeffut.mcwrapped.config.McWrappedConfig cfg = fr.zeffut.mcwrapped.config.ConfigManager.get();
+            if (!cfg.autoTriggerEnabled) return;
+            if (!withinGraceWindow(cfg.autoTriggerGraceDays)) return;
             final Optional<WrappedFile> ready = snapshots.findLatestUnconsumed();
             if (ready.isEmpty()) return;
 
@@ -51,5 +54,11 @@ public final class WrappedTitleButton {
 
     private static String monthLabel(final YearMonth month) {
         return month.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH) + " " + month.getYear();
+    }
+
+    /** True if today's day-of-month is within the configured grace window (1..N). */
+    private static boolean withinGraceWindow(final int graceDays) {
+        final int today = java.time.LocalDate.now().getDayOfMonth();
+        return today <= Math.max(1, Math.min(31, graceDays));
     }
 }
