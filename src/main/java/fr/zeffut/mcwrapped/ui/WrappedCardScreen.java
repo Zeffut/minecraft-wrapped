@@ -38,6 +38,7 @@ public final class WrappedCardScreen extends Screen {
     }
 
     private float renderScale() {
+        if (width <= 0 || height <= 0) return 1f;
         return Math.min(width / DESIGN_W, height / DESIGN_H);
     }
 
@@ -123,6 +124,10 @@ public final class WrappedCardScreen extends Screen {
         if (cards.isEmpty()) return super.keyPressed(keyCode, scanCode, modifiers);
         if (keyCode == GLFW.GLFW_KEY_SPACE) {
             paused = !paused;
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            close();
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_RIGHT) {
