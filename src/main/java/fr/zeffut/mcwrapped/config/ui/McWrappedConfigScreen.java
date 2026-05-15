@@ -29,11 +29,25 @@ import java.util.Locale;
 public final class McWrappedConfigScreen extends Screen {
 
     private static final List<String> TABS = List.of("Visual", "Cards", "Animation", "Export", "Privacy", "Trigger");
-    private static final int TAB_W = 78;
     private static final int TAB_H = 22;
+    /** Hard cap on the content column. Below this the layout shrinks proportionally. */
+    private static final int MAX_CONTENT_W = 520;
 
     @Nullable private final Screen parent;
     private int activeTab = 0;
+
+    // ---- Responsive layout helpers — recomputed every init() because width/height change.
+
+    private int contentW() { return Math.min(width - 40, MAX_CONTENT_W); }
+    private int xStart()   { return width / 2 - contentW() / 2; }
+    /** Label column width. ~38% of content; minimum 80px so short labels stay readable. */
+    private int labelW()   { return Math.max(80, (int) (contentW() * 0.38)); }
+    private int xLabel()   { return xStart(); }
+    private int xField()   { return xStart() + labelW() + 8; }
+    private int fieldW()   { return contentW() - labelW() - 8; }
+    private int rowH()     { return 22; }
+    /** Available height between the tab bar (bottom ~58) and the action bar (top ~height-38). */
+    private int contentTop() { return 64; }
 
     public McWrappedConfigScreen(@Nullable final Screen parent) {
         super(Text.literal("Minecraft Wrapped — Settings"));
@@ -42,9 +56,11 @@ public final class McWrappedConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        // Top tab bar.
-        final int totalTabsW = TABS.size() * TAB_W + (TABS.size() - 1) * 4;
-        final int tabStartX = width / 2 - totalTabsW / 2;
+        // Top tab bar — width adapts to the window so the 6 tabs always fit.
+        final int tabGap = 4;
+        final int tabsTotalW = Math.min(width - 20, MAX_CONTENT_W + 60);
+        final int tabW = (tabsTotalW - tabGap * (TABS.size() - 1)) / TABS.size();
+        final int tabStartX = width / 2 - tabsTotalW / 2;
         for (int i = 0; i < TABS.size(); i++) {
             final int idx = i;
             final boolean active = idx == activeTab;
@@ -52,7 +68,7 @@ public final class McWrappedConfigScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(label, btn -> {
                 activeTab = idx;
                 rebuild();
-            }).dimensions(tabStartX + i * (TAB_W + 4), 30, TAB_W, TAB_H).build());
+            }).dimensions(tabStartX + i * (tabW + tabGap), 30, tabW, TAB_H).build());
         }
 
         // Tab content.
@@ -65,28 +81,29 @@ public final class McWrappedConfigScreen extends Screen {
             case 5 -> buildTrigger();
         }
 
-        // Bottom Reset / Done bar.
+        // Bottom Reset / Done bar — also responsive.
+        final int actionW = Math.min(160, (contentW() - 20) / 2);
         addDrawableChild(ButtonWidget.builder(Text.literal("Reset all defaults"), btn -> {
             ConfigManager.get().resetToDefaults();
             ConfigManager.save();
             rebuild();
-        }).dimensions(width / 2 - 170, height - 28, 160, 20).build());
+        }).dimensions(width / 2 - actionW - 5, height - 28, actionW, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Done").formatted(Formatting.GREEN), btn -> {
             ConfigManager.save();
             close();
-        }).dimensions(width / 2 + 10, height - 28, 160, 20).build());
+        }).dimensions(width / 2 + 5, height - 28, actionW, 20).build());
     }
 
     // --------------------------------------------------------------- Tabs --
 
     private void buildVisual() {
         final McWrappedConfig cfg = ConfigManager.get();
-        int y = 70;
-        final int xLabel = width / 2 - 200;
-        final int xField = width / 2 - 20;
-        final int fieldW = 220;
-        final int rowH = 22;
+        int y = contentTop();
+        final int xLabel = xLabel();
+        final int xField = xField();
+        final int fieldW = fieldW();
+        final int rowH = rowH();
 
         // Theme cycle.
         addRow(y, xLabel, xField, fieldW, "Theme",
@@ -135,22 +152,23 @@ public final class McWrappedConfigScreen extends Screen {
     }
 
     private void buildCards() {
-        // Just one CTA + a summary.
-        final int xCenter = width / 2;
+        // Just one CTA + a summary, sized to fit the responsive content column.
+        final int btnW = contentW();
+        final int xBtn = xStart();
         final int countEnabled = (int) ConfigManager.get().enabledCards.values().stream().filter(b -> b).count();
         addDrawableChild(ButtonWidget.builder(
-                Text.literal("Open card order & visibility — " + countEnabled + "/" + ConfigManager.get().enabledCards.size() + " enabled"),
+                Text.literal("Card order & visibility — " + countEnabled + "/" + ConfigManager.get().enabledCards.size() + " enabled"),
                 btn -> client.setScreen(new CardOrderScreen(this)))
-                .dimensions(xCenter - 180, height / 2 - 40, 360, 24).build());
+                .dimensions(xBtn, height / 2 - 12, btnW, 24).build());
     }
 
     private void buildAnimation() {
         final McWrappedConfig cfg = ConfigManager.get();
-        int y = 70;
-        final int xLabel = width / 2 - 200;
-        final int xField = width / 2 - 20;
-        final int fieldW = 220;
-        final int rowH = 22;
+        int y = contentTop();
+        final int xLabel = xLabel();
+        final int xField = xField();
+        final int fieldW = fieldW();
+        final int rowH = rowH();
 
         // Speed multiplier.
         addRow(y, xLabel, xField, fieldW, "Speed",
@@ -186,11 +204,11 @@ public final class McWrappedConfigScreen extends Screen {
 
     private void buildExport() {
         final McWrappedConfig cfg = ConfigManager.get();
-        int y = 70;
-        final int xLabel = width / 2 - 200;
-        final int xField = width / 2 - 20;
-        final int fieldW = 220;
-        final int rowH = 22;
+        int y = contentTop();
+        final int xLabel = xLabel();
+        final int xField = xField();
+        final int fieldW = fieldW();
+        final int rowH = rowH();
 
         addRow(y, xLabel, xField, fieldW, "Aspect ratio",
                 ButtonWidget.builder(Text.literal(cfg.aspectRatio.displayName()), btn -> {
@@ -214,11 +232,11 @@ public final class McWrappedConfigScreen extends Screen {
 
     private void buildPrivacy() {
         final McWrappedConfig cfg = ConfigManager.get();
-        int y = 70;
-        final int xLabel = width / 2 - 200;
-        final int xField = width / 2 - 20;
-        final int fieldW = 220;
-        final int rowH = 22;
+        int y = contentTop();
+        final int xLabel = xLabel();
+        final int xField = xField();
+        final int fieldW = fieldW();
+        final int rowH = rowH();
 
         addRow(y, xLabel, xField, fieldW, "Mask server names",
                 booleanButton(cfg.maskServerNames, xField, y, fieldW, rowH,
@@ -236,11 +254,11 @@ public final class McWrappedConfigScreen extends Screen {
 
     private void buildTrigger() {
         final McWrappedConfig cfg = ConfigManager.get();
-        int y = 70;
-        final int xLabel = width / 2 - 200;
-        final int xField = width / 2 - 20;
-        final int fieldW = 220;
-        final int rowH = 22;
+        int y = contentTop();
+        final int xLabel = xLabel();
+        final int xField = xField();
+        final int fieldW = fieldW();
+        final int rowH = rowH();
 
         addRow(y, xLabel, xField, fieldW, "Auto-trigger",
                 booleanButton(cfg.autoTriggerEnabled, xField, y, fieldW, rowH,
