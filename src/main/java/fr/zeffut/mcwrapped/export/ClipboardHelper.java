@@ -51,16 +51,27 @@ public final class ClipboardHelper {
 
     private static void copyMacOS(final Path png) throws IOException {
         // «class PNGf» = the macOS pasteboard class for PNG data.
+        // AppleScript string literals escape `\` and `"` with backslashes.
+        final String escaped = png.toAbsolutePath().toString()
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
         final String script = "set the clipboard to (read (POSIX file \""
-                + png.toAbsolutePath() + "\") as «class PNGf»)";
+                + escaped + "\") as «class PNGf»)";
         runOrFail(new ProcessBuilder("osascript", "-e", script));
     }
 
     private static void copyWindows(final Path png) throws IOException {
+        // PowerShell single-quoted strings: only `'` needs escaping (doubled). Reject newlines
+        // defensively so a hostile TMPDIR can't break out across statements.
+        final String raw = png.toAbsolutePath().toString();
+        if (raw.indexOf('\n') >= 0 || raw.indexOf('\r') >= 0) {
+            throw new IOException("Refusing clipboard copy: temp path contains newlines.");
+        }
+        final String escaped = raw.replace("'", "''");
         final String ps = String.join(";",
                 "Add-Type -AssemblyName System.Windows.Forms",
                 "Add-Type -AssemblyName System.Drawing",
-                "$img = [System.Drawing.Image]::FromFile('" + png.toAbsolutePath().toString().replace("'", "''") + "')",
+                "$img = [System.Drawing.Image]::FromFile('" + escaped + "')",
                 "[System.Windows.Forms.Clipboard]::SetImage($img)",
                 "$img.Dispose()");
         runOrFail(new ProcessBuilder("powershell", "-NoProfile", "-Command", ps));
