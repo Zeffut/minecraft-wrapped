@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -38,13 +39,8 @@ public final class IntroCard implements Card {
     private static final int TOTAL_TICKS = HOLD_END + FADE_OUT_DURATION;
 
     // --- Colors (ARGB) ---
-    private static final int BG_TOP = 0xFF0F0F23;
-    private static final int BG_BOTTOM = 0xFF1E1B4B;
-    private static final int ACCENT_GREEN = 0xFF22C55E;
-    private static final int ACCENT_INDIGO = 0xFF4338CA;
     private static final int TEXT_HERO = 0xFFF8FAFC;
     private static final int TEXT_KICKER = 0xFF94A3B8;
-    private static final int TEXT_FOOTER = ACCENT_GREEN;
 
     private final String monthName;
     private final String yearLabel;
@@ -55,18 +51,24 @@ public final class IntroCard implements Card {
     private Sparkle[] sparkles;
 
     public IntroCard(final YearMonth month) {
-        this.monthName = month.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase(Locale.ROOT);
-        this.yearLabel = month.getYear() + " WRAPPED";
+        final String custom = fr.zeffut.mcwrapped.config.ConfigManager.get().customTitle.trim();
+        if (custom.isEmpty()) {
+            this.monthName = month.getMonth().getDisplayName(TextStyle.FULL, Locale.ENGLISH).toUpperCase(Locale.ROOT);
+            this.yearLabel = month.getYear() + " WRAPPED";
+        } else {
+            this.monthName = custom.toUpperCase(Locale.ROOT);
+            this.yearLabel = String.valueOf(month.getYear());
+        }
     }
 
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f));
+        WrappedSounds.play(client, SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f);
         // Reset shared sparkle timeline so a second wrapped in the same session doesn't inherit a
         // stale tick offset (which would freeze sparkles at alpha=0 until the counter caught up).
         Sparkle.globalTick = 0;
-        sparkles = new Sparkle[18];
+        final int sparkleCount = Math.max(0, Math.round(18 * fr.zeffut.mcwrapped.config.ConfigManager.get().sparkleDensity.multiplier()));
+        sparkles = new Sparkle[sparkleCount];
         for (int i = 0; i < sparkles.length; i++) {
             sparkles[i] = new Sparkle(rng, width, height);
         }
@@ -80,12 +82,10 @@ public final class IntroCard implements Card {
         for (final Sparkle s : sparkles) s.tick(rng, width, height);
 
         if (ticks == LETTER_START) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f);
         }
         if (ticks == FOOTER_START) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f);
         }
     }
 
@@ -112,11 +112,11 @@ public final class IntroCard implements Card {
     // ---------- Layers ----------
 
     private void renderGradient(final DrawContext ctx, final int width, final int height) {
-        // Vertical interp from BG_TOP to BG_BOTTOM via thin horizontal strips.
+        // Vertical interp from CardEffects.bgTop() to CardEffects.bgBottom() via thin horizontal strips.
         final int strips = 64;
         for (int i = 0; i < strips; i++) {
             final float t = i / (float) (strips - 1);
-            final int color = lerpColor(BG_TOP, BG_BOTTOM, t);
+            final int color = lerpColor(CardEffects.bgTop(), CardEffects.bgBottom(), t);
             final int y0 = i * height / strips;
             final int y1 = (i + 1) * height / strips;
             ctx.fill(0, y0, width, y1, color);
@@ -159,11 +159,11 @@ public final class IntroCard implements Card {
         final int cx = width / 2;
         final int cy = height / 2;
         final int alpha = (int) (fade * 220) & 0xFF;
-        final int color = (alpha << 24) | (ACCENT_GREEN & 0xFFFFFF);
+        final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         ctx.fill(cx - halfW, cy - 1, cx + halfW, cy + 1, color);
         // Soft glow line above/below at lower alpha.
         final int glowAlpha = (int) (fade * 60) & 0xFF;
-        final int glow = (glowAlpha << 24) | (ACCENT_GREEN & 0xFFFFFF);
+        final int glow = (glowAlpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         ctx.fill(cx - halfW, cy - 3, cx + halfW, cy - 2, glow);
         ctx.fill(cx - halfW, cy + 2, cx + halfW, cy + 3, glow);
     }
@@ -191,7 +191,7 @@ public final class IntroCard implements Card {
         final float anyLetterT = clamp01((now - LETTER_START) / (float) LETTER_DURATION);
         if (anyLetterT > 0) {
             final int shadowAlpha = (int) (anyLetterT * 100) & 0xFF;
-            final int shadowColor = (shadowAlpha << 24) | (ACCENT_INDIGO & 0xFFFFFF);
+            final int shadowColor = (shadowAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF);
             ctx.getMatrices().push();
             ctx.getMatrices().scale(scale, scale, 1f);
             ctx.drawText(tr, monthName, (int) ((startX + 3) / scale), (int) ((baseY + 4) / scale), shadowColor, false);
@@ -224,7 +224,7 @@ public final class IntroCard implements Card {
         if (ft <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(ft);
         final int alpha = (int) (ease * 255) & 0xFF;
-        final int color = (alpha << 24) | (TEXT_FOOTER & 0xFFFFFF);
+        final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
 
         final float footerScale = 1.5f;
         final int footerWidth = (int) (tr.getWidth(yearLabel) * footerScale);
@@ -244,7 +244,7 @@ public final class IntroCard implements Card {
             final int halfLen = (int) (ue * footerWidth / 2f);
             final int underlineY = yBase + (int) (10 * footerScale);
             final int cx = width / 2;
-            ctx.fill(cx - halfLen, underlineY, cx + halfLen, underlineY + 2, TEXT_FOOTER);
+            ctx.fill(cx - halfLen, underlineY, cx + halfLen, underlineY + 2, CardEffects.accent());
         }
     }
 

@@ -16,6 +16,9 @@
   "entrypoints": {
     "client": [
       "fr.zeffut.mcwrapped.McWrappedClient"
+    ],
+    "modmenu": [
+      "fr.zeffut.mcwrapped.compat.ModMenuIntegration"
     ]
   },
   "depends": {
@@ -23,5 +26,8 @@
     "minecraft": "~1.21.4",
     "java": ">=21",
     "fabric-api": "*"
+  },
+  "recommends": {
+    "modmenu": "*"
   }
 }

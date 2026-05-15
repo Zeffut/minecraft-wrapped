@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -38,9 +39,9 @@ public final class DistanceCard implements Card {
         final List<Mode> all = new ArrayList<>();
         all.add(new Mode("ON FOOT", custom.getOrDefault("minecraft:walk_one_cm", 0L)
                 + custom.getOrDefault("minecraft:sprint_one_cm", 0L)
-                + custom.getOrDefault("minecraft:crouch_one_cm", 0L), CardEffects.ACCENT_GREEN));
+                + custom.getOrDefault("minecraft:crouch_one_cm", 0L), CardEffects.accent()));
         all.add(new Mode("BY ELYTRA", custom.getOrDefault("minecraft:aviate_one_cm", 0L), CardEffects.ACCENT_GOLD));
-        all.add(new Mode("BY BOAT", custom.getOrDefault("minecraft:boat_one_cm", 0L), CardEffects.ACCENT_INDIGO));
+        all.add(new Mode("BY BOAT", custom.getOrDefault("minecraft:boat_one_cm", 0L), CardEffects.accentSecondary()));
         all.add(new Mode("ON HORSE", custom.getOrDefault("minecraft:horse_one_cm", 0L), 0xFFB45309));
         all.add(new Mode("SWIMMING", custom.getOrDefault("minecraft:swim_one_cm", 0L)
                 + custom.getOrDefault("minecraft:walk_on_water_one_cm", 0L)
@@ -58,8 +59,7 @@ public final class DistanceCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(16, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.ENTITY_HORSE_GALLOP, 1.0f, 0.4f));
+        WrappedSounds.play(client, SoundEvents.ENTITY_HORSE_GALLOP, 1.0f, 0.4f);
         started = true;
     }
 
@@ -75,7 +75,7 @@ public final class DistanceCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         CardEffects.renderKicker(ctx, tr, width, height / 2 - 130, "DISTANCE COVERED", now, KICKER_START, KICKER_DURATION);
