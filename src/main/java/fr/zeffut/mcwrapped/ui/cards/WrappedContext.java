@@ -28,13 +28,31 @@ public record WrappedContext(YearMonth month, MonthlyDelta delta) {
     public List<Map.Entry<String, Long>> topKilledBy(final int n) { return top("minecraft:killed_by", n); }
 
     public List<Map.Entry<String, Long>> topWorlds(final int n) {
-        return delta.perWorldPlayTimeDelta().entrySet().stream()
+        return filteredWorlds().entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .limit(n)
                 .toList();
     }
 
-    public int worldsCount() { return delta.perWorldPlayTimeDelta().size(); }
+    public int worldsCount() { return filteredWorlds().size(); }
+
+    /**
+     * Apply user-configured include / exclude lists. Empty include list means "all"; the exclude
+     * list always takes precedence and removes matching keys.
+     */
+    private Map<String, Long> filteredWorlds() {
+        final fr.zeffut.mcwrapped.config.McWrappedConfig cfg = fr.zeffut.mcwrapped.config.ConfigManager.get();
+        final Map<String, Long> raw = delta.perWorldPlayTimeDelta();
+        if (cfg.includedWorlds.isEmpty() && cfg.excludedWorlds.isEmpty()) return raw;
+        final java.util.LinkedHashMap<String, Long> out = new java.util.LinkedHashMap<>();
+        for (final var e : raw.entrySet()) {
+            final String k = e.getKey();
+            if (!cfg.includedWorlds.isEmpty() && !cfg.includedWorlds.contains(k)) continue;
+            if (cfg.excludedWorlds.contains(k)) continue;
+            out.put(k, e.getValue());
+        }
+        return out;
+    }
 
     public int playersMet()       { return delta.playersMetDelta(); }
     public long messagesSent()    { return delta.messagesSentDelta(); }

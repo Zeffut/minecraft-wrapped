@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -34,8 +35,7 @@ public final class SocialCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.4f, 0.5f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.4f, 0.5f);
         started = true;
     }
 
@@ -51,7 +51,7 @@ public final class SocialCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
         renderAvatarOrbits(ctx, width, height, now);
 
@@ -90,7 +90,7 @@ public final class SocialCard implements Card {
                 final int x = cx + dx;
                 final int y = cy + dy;
                 final int dotAlpha = Math.min(alpha, 90 - ring * 30);
-                final int color = (dotAlpha << 24) | ((ring == 0 ? CardEffects.ACCENT_INDIGO : CardEffects.TEXT_KICKER) & 0xFFFFFF);
+                final int color = (dotAlpha << 24) | ((ring == 0 ? CardEffects.accentSecondary() : CardEffects.TEXT_KICKER) & 0xFFFFFF);
                 ctx.fill(x - 2, y - 2, x + 3, y + 3, color);
             }
         }
@@ -126,7 +126,7 @@ public final class SocialCard implements Card {
         final int yOffset = (int) ((1f - ease) * 6);
 
         final String label = context.playersMet() == 1 ? "PLAYER MET" : "PLAYERS MET";
-        final int color = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+        final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(label)), width / 2, height / 2 + 22 + yOffset, color);
     }
 
@@ -152,22 +152,22 @@ public final class SocialCard implements Card {
         // Solo (green) on left.
         final int soloAlpha = (int) (ease * 255) & 0xFF;
         final int soloFill = (int) (barWidth * soloPct * ease);
-        ctx.fill(barX, barY, barX + soloFill, barY + barH, (soloAlpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF));
+        ctx.fill(barX, barY, barX + soloFill, barY + barH, (soloAlpha << 24) | (CardEffects.accent() & 0xFFFFFF));
 
         // Server (indigo) on right.
         final int serverFill = (int) (barWidth * (1 - soloPct) * ease);
-        ctx.fill(barX + barWidth - serverFill, barY, barX + barWidth, barY + barH, (soloAlpha << 24) | (CardEffects.ACCENT_INDIGO & 0xFFFFFF));
+        ctx.fill(barX + barWidth - serverFill, barY, barX + barWidth, barY + barH, (soloAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF));
 
         // Labels under each segment.
         final int labelAlpha = (int) (ease * 200) & 0xFF;
         if (soloPct > 0.05f) {
             final String soloLabel = Math.round(soloPct * 100) + "% SOLO";
-            ctx.drawTextWithShadow(tr, Text.literal(soloLabel), barX, barY + barH + 6, (labelAlpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF));
+            ctx.drawTextWithShadow(tr, Text.literal(soloLabel), barX, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accent() & 0xFFFFFF));
         }
         if (1 - soloPct > 0.05f) {
             final String srvLabel = Math.round((1 - soloPct) * 100) + "% SERVERS";
             final int w = tr.getWidth(srvLabel);
-            ctx.drawTextWithShadow(tr, Text.literal(srvLabel), barX + barWidth - w, barY + barH + 6, (labelAlpha << 24) | (CardEffects.ACCENT_INDIGO & 0xFFFFFF));
+            ctx.drawTextWithShadow(tr, Text.literal(srvLabel), barX + barWidth - w, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF));
         }
     }
 

@@ -1,9 +1,13 @@
 package fr.zeffut.mcwrapped.export;
 
 import fr.zeffut.mcwrapped.McWrappedClient;
+import fr.zeffut.mcwrapped.config.AspectRatio;
+import fr.zeffut.mcwrapped.config.ConfigManager;
+import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.MinecraftClient;
 
 import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
@@ -31,8 +35,12 @@ import java.util.Map;
  */
 public final class ImageExporter {
 
-    private static final int W = 1080;
-    private static final int H = 1920;
+    // Defaults; resolved per-call from the user's chosen aspect ratio.
+    private static final int DEFAULT_W = 1080;
+    private static final int DEFAULT_H = 1920;
+    // Current output dimensions, swapped each call to render(). Confined to the export thread.
+    private static int W = DEFAULT_W;
+    private static int H = DEFAULT_H;
 
     private static final Color BG_TOP = new Color(0x0F, 0x0F, 0x23);
     private static final Color BG_BOTTOM = new Color(0x1E, 0x1B, 0x4B);
@@ -53,6 +61,9 @@ public final class ImageExporter {
     public static BufferedImage render(final WrappedContext ctx) {
         ensureFontLoaded();
 
+        final AspectRatio ar = ConfigManager.get().aspectRatio;
+        W = ar.width();
+        H = ar.height();
         final BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -172,12 +183,49 @@ public final class ImageExporter {
     }
 
     private static void renderFooter(final Graphics2D g) {
+        final McWrappedConfig cfg = ConfigManager.get();
         g.setFont(font(32));
         g.setColor(TEXT_KICKER);
         drawCentered(g, "MINECRAFT WRAPPED", W / 2, H - 110);
         g.setFont(font(22));
         g.setColor(TEXT_DIM);
         drawCentered(g, "github.com/Zeffut/minecraft-wrapped", W / 2, H - 70);
+
+        // IGN watermark (top-left), if enabled and not masked.
+        if (cfg.watermarkSkinHead && !cfg.maskIgn) {
+            final String ign = currentIgn();
+            if (!ign.isEmpty()) {
+                // Tiny "skin" tile: a colored square hashed from the IGN, then "by <IGN>" beside it.
+                final int tileSize = 48;
+                final int tileX = 36;
+                final int tileY = 36;
+                final int hue = ign.hashCode() & 0xFFFFFF;
+                g.setColor(new Color((hue >> 16) & 0xFF | 0x40, (hue >> 8) & 0xFF | 0x40, hue & 0xFF | 0x40));
+                g.fillRect(tileX, tileY, tileSize, tileSize);
+                g.setColor(TILE_BORDER);
+                g.setStroke(new BasicStroke(2f));
+                g.drawRect(tileX, tileY, tileSize, tileSize);
+                g.setFont(font(24));
+                g.setColor(TEXT_DIM);
+                g.drawString("by " + ign, tileX + tileSize + 12, tileY + 32);
+            }
+        }
+
+        // User signature line, if set.
+        if (cfg.signature != null && !cfg.signature.isBlank()) {
+            g.setFont(font(20));
+            g.setColor(TEXT_DIM);
+            drawCentered(g, cfg.signature, W / 2, H - 36);
+        }
+    }
+
+    private static String currentIgn() {
+        try {
+            final MinecraftClient mc = MinecraftClient.getInstance();
+            return mc != null && mc.getSession() != null ? mc.getSession().getUsername() : "";
+        } catch (final RuntimeException e) {
+            return "";
+        }
     }
 
     // --- Tile data ----------------------------------------------------------
@@ -189,7 +237,7 @@ public final class ImageExporter {
                 : minutes + "m";
 
         final String topWorld = ctx.topWorlds(1).stream().findFirst()
-                .map(e -> WorldKey.displayName(e.getKey()))
+                .map(e -> WorldKey.displayNameMasked(e.getKey(), 1))
                 .orElse("—");
         final String topMob = ctx.topKilled(1).stream().findFirst()
                 .map(e -> stripNs(e.getKey()) + " ×" + e.getValue())

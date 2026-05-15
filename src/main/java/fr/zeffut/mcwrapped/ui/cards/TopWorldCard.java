@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
@@ -40,8 +41,7 @@ public final class TopWorldCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.BLOCK_CHEST_OPEN, 1.4f, 0.4f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_CHEST_OPEN, 1.4f, 0.4f);
         started = true;
     }
 
@@ -57,7 +57,7 @@ public final class TopWorldCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
         renderMapGridBackground(ctx, width, height, now);
 
@@ -156,12 +156,12 @@ public final class TopWorldCard implements Card {
         final int alpha = (int) (ease * 255) & 0xFF;
         final int yOffset = (int) ((1f - ease) * 8);
 
-        final String worldName = WorldKey.displayName(worldKey);
+        final String worldName = WorldKey.displayNameMasked(worldKey, 1);
         final boolean isServer = WorldKey.isServer(worldKey);
 
         // Small SOURCE badge, floating above the frame as a tag chip.
         final String badge = WorldKey.badge(worldKey);
-        final int badgeColor = (alpha << 24) | ((isServer ? CardEffects.ACCENT_INDIGO : CardEffects.ACCENT_GREEN) & 0xFFFFFF);
+        final int badgeColor = (alpha << 24) | ((isServer ? CardEffects.accentSecondary() : CardEffects.accent()) & 0xFFFFFF);
         ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(badge)), width / 2, height / 2 - 78 + yOffset, badgeColor);
 
         // World name (truncated if too long). Vertically centered with frame center (height/2 - 5).
@@ -206,7 +206,7 @@ public final class TopWorldCard implements Card {
         ctx.fill(barX, barY, barX + barWidth, barY + barH, 0x4044556B);
         // Fill (green).
         final int filled = (int) (barWidth * fillT);
-        ctx.fill(barX, barY, barX + filled, barY + barH, CardEffects.ACCENT_GREEN);
+        ctx.fill(barX, barY, barX + filled, barY + barH, CardEffects.accent());
 
         // Label.
         final float lt = CardEffects.clamp01((now - LABEL_START) / (float) LABEL_DURATION);

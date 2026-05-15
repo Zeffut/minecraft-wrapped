@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.TimeOfDayTracker;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
@@ -49,8 +50,7 @@ public final class TimeOfDayCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 1.0f, 0.5f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 1.0f, 0.5f);
         started = true;
     }
 
@@ -66,7 +66,7 @@ public final class TimeOfDayCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         CardEffects.renderKicker(ctx, tr, width, height / 2 - 110, "WHEN YOU PLAY", now, KICKER_START, KICKER_DURATION);
@@ -98,8 +98,8 @@ public final class TimeOfDayCard implements Card {
             final int barH = (int) (maxBarH * ratio * ease);
             final int alpha = (int) (ease * 255) & 0xFF;
             final int color = h == peakHour
-                    ? ((alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF))
-                    : ((alpha << 24) | (CardEffects.ACCENT_INDIGO & 0xFFFFFF));
+                    ? ((alpha << 24) | (CardEffects.accent() & 0xFFFFFF))
+                    : ((alpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF));
             final int x = xLeft + h * (barW + gap);
             ctx.fill(x, yBottom - barH, x + barW, yBottom, color);
         }
@@ -118,7 +118,7 @@ public final class TimeOfDayCard implements Card {
         final float t = CardEffects.clamp01((now - LABEL_START) / (float) LABEL_DURATION);
         if (t <= 0) return;
         final int alpha = (int) (t * 255) & 0xFF;
-        final int color = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+        final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         final String label = String.format("peak hour: %02dh — %s", peakHour, peakLabelText(peakHour));
         ctx.drawCenteredTextWithShadow(tr, Text.literal(label), width / 2, height / 2 + 80, color);
     }

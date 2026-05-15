@@ -23,6 +23,18 @@ public final class WorldKey {
         return key;
     }
 
+    /**
+     * Like {@link #displayName(String)} but honors {@code config.maskServerNames}: returns
+     * "Server #N" for servers when the user opted into privacy masking. The numbering is stable as
+     * long as the input list order is stable.
+     */
+    public static String displayNameMasked(final String key, final int serverIndex) {
+        if (isServer(key) && fr.zeffut.mcwrapped.config.ConfigManager.get().maskServerNames) {
+            return "Server #" + serverIndex;
+        }
+        return displayName(key);
+    }
+
     public static String badge(final String key) {
         return isServer(key) ? "SERVER" : "WORLD";
     }
