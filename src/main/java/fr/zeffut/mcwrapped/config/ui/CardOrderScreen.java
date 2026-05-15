@@ -35,7 +35,7 @@ public final class CardOrderScreen extends Screen {
         final McWrappedConfig cfg = ConfigManager.get();
         final int rowH = 22;
         final int gap = 4;
-        final int contentW = 360;
+        final int contentW = Math.min(width - 40, 420);
         final int xLeft = width / 2 - contentW / 2;
         final int yTop = 50;
         final int maxRows = Math.max(0, (height - yTop - 60) / (rowH + gap));
@@ -67,18 +67,19 @@ public final class CardOrderScreen extends Screen {
             // Card name (not a button — drawn in render()).
         }
 
-        // Reset + Back at the bottom.
+        // Reset + Back at the bottom. The two action buttons share contentW so they always fit.
+        final int actionW = (contentW - 10) / 2;
         addDrawableChild(ButtonWidget.builder(Text.literal("Enable all"), btn -> {
             for (final CardId id : CardId.values()) cfg.enabledCards.put(id, true);
             ConfigManager.save();
             rebuild();
-        }).dimensions(xLeft, height - 50, 120, 20).build());
+        }).dimensions(xLeft, height - 50, actionW, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Default order"), btn -> {
             this.order = new ArrayList<>(List.of(CardId.values()));
             cfg.cardOrder = new ArrayList<>(this.order);
             ConfigManager.save();
             rebuild();
-        }).dimensions(xLeft + 130, height - 50, 120, 20).build());
+        }).dimensions(xLeft + actionW + 10, height - 50, actionW, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Back"), btn -> close())
                 .dimensions(width / 2 - 60, height - 25, 120, 20).build());
     }
@@ -118,7 +119,7 @@ public final class CardOrderScreen extends Screen {
         // Card names rendered on top of buttons.
         final int rowH = 22;
         final int gap = 4;
-        final int contentW = 360;
+        final int contentW = Math.min(width - 40, 420);
         final int xLeft = width / 2 - contentW / 2;
         final int yTop = 50;
         final int maxRows = Math.max(0, (height - yTop - 60) / (rowH + gap));
