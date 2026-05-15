@@ -11,8 +11,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.PlayerListEntry;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerInfo;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -68,13 +68,13 @@ public final class MultiplayerTracker {
     public long commandsSent() { return commandsSent; }
     public int serversVisitedCount() { return serversVisited.size(); }
 
-    private void onTick(final MinecraftClient client) {
+    private void onTick(final Minecraft client) {
         if (client.world == null || client.isInSingleplayer() || client.getNetworkHandler() == null) return;
         if (selfUuid == null) selfUuid = client.getSession().getUuidOrNull();
 
         if (++pollCounter >= POLL_INTERVAL_TICKS) {
             pollCounter = 0;
-            for (final PlayerListEntry entry : client.getNetworkHandler().getPlayerList()) {
+            for (final PlayerInfo entry : client.getNetworkHandler().getPlayerList()) {
                 final UUID uuid = entry.getProfile().id();
                 if (uuid != null && !uuid.equals(selfUuid)) {
                     playersSeen.add(uuid);
@@ -88,7 +88,7 @@ public final class MultiplayerTracker {
         }
     }
 
-    private void noteServer(final MinecraftClient client) {
+    private void noteServer(final Minecraft client) {
         if (client.getCurrentServerEntry() != null && client.getCurrentServerEntry().address != null) {
             serversVisited.add(client.getCurrentServerEntry().address.toLowerCase());
         }

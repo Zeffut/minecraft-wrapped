@@ -1,18 +1,18 @@
 package fr.zeffut.mcwrapped.config.ui;
 
-import net.minecraft.client.gui.widget.SliderWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.network.chat.Component;
 
 import java.util.Locale;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleFunction;
 
 /**
- * Generic numeric slider. Converts a logical {@code min..max} value into the SliderWidget's 0..1
+ * Generic numeric slider. Converts a logical {@code min..max} value into the AbstractSliderButton's 0..1
  * range and back, formats the label via {@link #labelFn}, and pushes changes through
  * {@link #onChange}.
  */
-public final class ConfigSlider extends SliderWidget {
+public final class ConfigSlider extends AbstractSliderButton {
 
     private final double min;
     private final double max;
@@ -23,7 +23,7 @@ public final class ConfigSlider extends SliderWidget {
                         final double min, final double max, final double initial,
                         final DoubleFunction<String> labelFn,
                         final DoubleConsumer onChange) {
-        super(x, y, w, h, Text.empty(), clamp01((initial - min) / (max - min)));
+        super(x, y, w, h, Component.empty(), clamp01((initial - min) / (max - min)));
         this.min = min;
         this.max = max;
         this.labelFn = labelFn;
@@ -42,7 +42,7 @@ public final class ConfigSlider extends SliderWidget {
 
     @Override
     protected void updateMessage() {
-        setMessage(Text.literal(labelFn.apply(logicalValue())));
+        setMessage(Component.literal(labelFn.apply(logicalValue())));
     }
 
     @Override

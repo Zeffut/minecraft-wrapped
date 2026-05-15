@@ -8,13 +8,13 @@ import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.config.SparkleDensity;
 import fr.zeffut.mcwrapped.config.TransitionStyle;
 import fr.zeffut.mcwrapped.ui.cards.CardEffects;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -50,7 +50,7 @@ public final class McWrappedConfigScreen extends Screen {
     private int contentTop() { return 64; }
 
     public McWrappedConfigScreen(@Nullable final Screen parent) {
-        super(Text.literal("Minecraft Wrapped — Settings"));
+        super(Component.literal("Minecraft Wrapped — Settings"));
         this.parent = parent;
     }
 
@@ -64,11 +64,11 @@ public final class McWrappedConfigScreen extends Screen {
         for (int i = 0; i < TABS.size(); i++) {
             final int idx = i;
             final boolean active = idx == activeTab;
-            final Text label = Text.literal(TABS.get(i)).formatted(active ? Formatting.GOLD : Formatting.GRAY);
-            addDrawableChild(ButtonWidget.builder(label, btn -> {
+            final Component label = Component.literal(TABS.get(i)).formatted(active ? ChatFormatting.GOLD : ChatFormatting.GRAY);
+            addDrawableChild(Button.builder(label, btn -> {
                 activeTab = idx;
                 rebuild();
-            }).dimensions(tabStartX + i * (tabW + tabGap), 30, tabW, TAB_H).build());
+            }).bounds(tabStartX + i * (tabW + tabGap), 30, tabW, TAB_H).build());
         }
 
         // Tab content.
@@ -83,16 +83,16 @@ public final class McWrappedConfigScreen extends Screen {
 
         // Bottom Reset / Done bar — also responsive.
         final int actionW = Math.min(160, (contentW() - 20) / 2);
-        addDrawableChild(ButtonWidget.builder(Text.literal("Reset all defaults"), btn -> {
+        addDrawableChild(Button.builder(Component.literal("Reset all defaults"), btn -> {
             ConfigManager.get().resetToDefaults();
             ConfigManager.save();
             rebuild();
-        }).dimensions(width / 2 - actionW - 5, height - 28, actionW, 20).build());
+        }).bounds(width / 2 - actionW - 5, height - 28, actionW, 20).build());
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Done").formatted(Formatting.GREEN), btn -> {
+        addDrawableChild(Button.builder(Component.literal("Done").formatted(ChatFormatting.GREEN), btn -> {
             ConfigManager.save();
             close();
-        }).dimensions(width / 2 + 5, height - 28, actionW, 20).build());
+        }).bounds(width / 2 + 5, height - 28, actionW, 20).build());
     }
 
     // --------------------------------------------------------------- Tabs --
@@ -107,8 +107,8 @@ public final class McWrappedConfigScreen extends Screen {
 
         // Theme cycle.
         addRow(y, xLabel, xField, fieldW, "Theme",
-                ButtonWidget.builder(Text.literal(cfg.theme.displayName()), btn -> cycleTheme(cfg))
-                        .dimensions(xField, y, fieldW, rowH).build());
+                Button.builder(Component.literal(cfg.theme.displayName()), btn -> cycleTheme(cfg))
+                        .bounds(xField, y, fieldW, rowH).build());
         y += rowH + 6;
 
         // Custom colors visible only when CUSTOM.
@@ -130,15 +130,15 @@ public final class McWrappedConfigScreen extends Screen {
 
         // Gradient direction.
         addRow(y, xLabel, xField, fieldW, "Gradient",
-                ButtonWidget.builder(Text.literal(cfg.gradient.displayName()), btn -> {
+                Button.builder(Component.literal(cfg.gradient.displayName()), btn -> {
                     cfg.gradient = cycle(cfg.gradient, GradientDirection.values());
                     ConfigManager.save();
                     rebuild();
-                }).dimensions(xField, y, fieldW, rowH).build());
+                }).bounds(xField, y, fieldW, rowH).build());
         y += rowH + 6;
 
         // Custom title.
-        final TextFieldWidget titleField = new TextFieldWidget(textRenderer, xField, y, fieldW, rowH, Text.literal("title"));
+        final EditBox titleField = new EditBox(font, xField, y, fieldW, rowH, Component.literal("title"));
         titleField.setMaxLength(64);
         titleField.setText(cfg.customTitle);
         titleField.setChangedListener(s -> { cfg.customTitle = s; ConfigManager.save(); });
@@ -156,10 +156,10 @@ public final class McWrappedConfigScreen extends Screen {
         final int btnW = contentW();
         final int xBtn = xStart();
         final int countEnabled = (int) ConfigManager.get().enabledCards.values().stream().filter(b -> b).count();
-        addDrawableChild(ButtonWidget.builder(
-                Text.literal("Card order & visibility — " + countEnabled + "/" + ConfigManager.get().enabledCards.size() + " enabled"),
+        addDrawableChild(Button.builder(
+                Component.literal("Card order & visibility — " + countEnabled + "/" + ConfigManager.get().enabledCards.size() + " enabled"),
                 btn -> client.setScreen(new CardOrderScreen(this)))
-                .dimensions(xBtn, height / 2 - 12, btnW, 24).build());
+                .bounds(xBtn, height / 2 - 12, btnW, 24).build());
     }
 
     private void buildAnimation() {
@@ -186,20 +186,20 @@ public final class McWrappedConfigScreen extends Screen {
 
         // Sparkle density (cycle).
         addRow(y, xLabel, xField, fieldW, "Sparkles",
-                ButtonWidget.builder(Text.literal(cfg.sparkleDensity.displayName()), btn -> {
+                Button.builder(Component.literal(cfg.sparkleDensity.displayName()), btn -> {
                     cfg.sparkleDensity = cycle(cfg.sparkleDensity, SparkleDensity.values());
                     ConfigManager.save();
                     rebuild();
-                }).dimensions(xField, y, fieldW, rowH).build());
+                }).bounds(xField, y, fieldW, rowH).build());
         y += rowH + 6;
 
         // Transition (cycle).
         addRow(y, xLabel, xField, fieldW, "Transition",
-                ButtonWidget.builder(Text.literal(cfg.transition.displayName()), btn -> {
+                Button.builder(Component.literal(cfg.transition.displayName()), btn -> {
                     cfg.transition = cycle(cfg.transition, TransitionStyle.values());
                     ConfigManager.save();
                     rebuild();
-                }).dimensions(xField, y, fieldW, rowH).build());
+                }).bounds(xField, y, fieldW, rowH).build());
     }
 
     private void buildExport() {
@@ -211,11 +211,11 @@ public final class McWrappedConfigScreen extends Screen {
         final int rowH = rowH();
 
         addRow(y, xLabel, xField, fieldW, "Aspect ratio",
-                ButtonWidget.builder(Text.literal(cfg.aspectRatio.displayName()), btn -> {
+                Button.builder(Component.literal(cfg.aspectRatio.displayName()), btn -> {
                     cfg.aspectRatio = cycle(cfg.aspectRatio, AspectRatio.values());
                     ConfigManager.save();
                     rebuild();
-                }).dimensions(xField, y, fieldW, rowH).build());
+                }).bounds(xField, y, fieldW, rowH).build());
         y += rowH + 6;
 
         addRow(y, xLabel, xField, fieldW, "Skin head watermark",
@@ -223,7 +223,7 @@ public final class McWrappedConfigScreen extends Screen {
                         v -> { cfg.watermarkSkinHead = v; ConfigManager.save(); rebuild(); }));
         y += rowH + 6;
 
-        final TextFieldWidget sig = new TextFieldWidget(textRenderer, xField, y, fieldW, rowH, Text.literal("sig"));
+        final EditBox sig = new EditBox(font, xField, y, fieldW, rowH, Component.literal("sig"));
         sig.setMaxLength(64);
         sig.setText(cfg.signature);
         sig.setChangedListener(s -> { cfg.signature = s; ConfigManager.save(); });
@@ -272,7 +272,7 @@ public final class McWrappedConfigScreen extends Screen {
         y += rowH + 6;
 
         // Target month text field (empty = previous month).
-        final TextFieldWidget tm = new TextFieldWidget(textRenderer, xField, y, fieldW, rowH, Text.literal("YYYY-MM"));
+        final EditBox tm = new EditBox(font, xField, y, fieldW, rowH, Component.literal("YYYY-MM"));
         tm.setMaxLength(7);
         tm.setText(cfg.targetMonth);
         tm.setChangedListener(s -> { cfg.targetMonth = s.trim(); ConfigManager.save(); });
@@ -282,7 +282,7 @@ public final class McWrappedConfigScreen extends Screen {
     // ------------------------------------------------------------ Helpers --
 
     private void addRow(final int y, final int xLabel, final int xField, final int fieldW,
-                        final String label, final net.minecraft.client.gui.widget.ClickableWidget widget) {
+                        final String label, final net.minecraft.client.gui.components.AbstractWidget widget) {
         // Label rendered in render(); widget added as drawable child.
         labels.add(new LabelEntry(label, xLabel, y));
         addDrawableChild(widget);
@@ -294,10 +294,10 @@ public final class McWrappedConfigScreen extends Screen {
         addDrawableChild(new HexColorField(xField, y, fieldW, 22, currentArgb, onChange));
     }
 
-    private ButtonWidget booleanButton(final boolean value, final int x, final int y, final int w, final int h,
+    private Button booleanButton(final boolean value, final int x, final int y, final int w, final int h,
                                        final java.util.function.Consumer<Boolean> onChange) {
-        final Text text = Text.literal(value ? "ON" : "OFF").formatted(value ? Formatting.GREEN : Formatting.GRAY);
-        return ButtonWidget.builder(text, btn -> onChange.accept(!value)).dimensions(x, y, w, h).build();
+        final Component text = Component.literal(value ? "ON" : "OFF").formatted(value ? ChatFormatting.GREEN : ChatFormatting.GRAY);
+        return Button.builder(text, btn -> onChange.accept(!value)).bounds(x, y, w, h).build();
     }
 
     private static <T extends Enum<T>> T cycle(final T current, final T[] values) {
@@ -316,42 +316,42 @@ public final class McWrappedConfigScreen extends Screen {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int mouseX, final int mouseY, final float delta) {
+    public void render(final GuiGraphics ctx, final int mouseX, final int mouseY, final float delta) {
         CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
         super.render(ctx, mouseX, mouseY, delta);
 
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("MINECRAFT WRAPPED — SETTINGS").formatted(Formatting.GOLD),
+        ctx.drawCenteredString(font,
+                Component.literal("MINECRAFT WRAPPED — SETTINGS").formatted(ChatFormatting.GOLD),
                 width / 2, 12, 0xFFFFFFFF);
 
         for (final LabelEntry l : labels) {
-            ctx.drawTextWithShadow(textRenderer, Text.literal(l.text), l.x, l.y + 7, 0xFFE5E7EB);
+            ctx.drawString(font, Component.literal(l.text), l.x, l.y + 7, 0xFFE5E7EB);
         }
 
         if (activeTab == 4) {
             // Privacy hint.
-            ctx.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal("World filter: edit config/mcwrapped.json → includedWorlds / excludedWorlds")
-                            .formatted(Formatting.GRAY),
+            ctx.drawCenteredString(font,
+                    Component.literal("World filter: edit config/mcwrapped.json → includedWorlds / excludedWorlds")
+                            .formatted(ChatFormatting.GRAY),
                     width / 2, height - 70, 0xFFAAB0BB);
         }
         if (activeTab == 5) {
             // Trigger hint.
-            ctx.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal("Target month: leave empty to use the previous month automatically")
-                            .formatted(Formatting.GRAY),
+            ctx.drawCenteredString(font,
+                    Component.literal("Target month: leave empty to use the previous month automatically")
+                            .formatted(ChatFormatting.GRAY),
                     width / 2, height - 70, 0xFFAAB0BB);
         }
     }
 
     @Override
-    public void renderBackground(final DrawContext ctx, final int mouseX, final int mouseY, final float delta) {
+    public void renderBackground(final GuiGraphics ctx, final int mouseX, final int mouseY, final float delta) {
         // Painted in render().
     }
 
     @Override
     public void close() {
-        final MinecraftClient mc = MinecraftClient.getInstance();
+        final Minecraft mc = Minecraft.getInstance();
         if (mc != null) mc.setScreen(parent);
     }
 

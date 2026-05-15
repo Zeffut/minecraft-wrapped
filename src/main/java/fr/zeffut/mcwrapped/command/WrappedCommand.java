@@ -10,8 +10,8 @@ import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
 import fr.zeffut.mcwrapped.ui.cards.WrappedSequence;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
@@ -24,12 +24,12 @@ public final class WrappedCommand {
             dispatcher.register(ClientCommandManager.literal("wrapped")
                     .executes(c -> openLatest(snapshots))
                     .then(ClientCommandManager.literal("history").executes(c -> {
-                        final MinecraftClient client = MinecraftClient.getInstance();
+                        final Minecraft client = Minecraft.getInstance();
                         client.send(() -> client.setScreen(new WrappedHistoryScreen(client.currentScreen, snapshots)));
                         return Command.SINGLE_SUCCESS;
                     }))
                     .then(ClientCommandManager.literal("config").executes(c -> {
-                        final MinecraftClient client = MinecraftClient.getInstance();
+                        final Minecraft client = Minecraft.getInstance();
                         client.send(() -> client.setScreen(new McWrappedConfigScreen(client.currentScreen)));
                         return Command.SINGLE_SUCCESS;
                     })));
@@ -37,11 +37,11 @@ public final class WrappedCommand {
     }
 
     private static int openLatest(final SnapshotManager snapshots) {
-        final MinecraftClient client = MinecraftClient.getInstance();
+        final Minecraft client = Minecraft.getInstance();
         final WrappedFile target = pickTarget(snapshots);
         if (target == null) {
             if (client.player != null) {
-                client.player.sendMessage(Text.literal("No wrapped to show — set a different target month in /wrapped config or wait for next month."), false);
+                client.player.sendMessage(Component.literal("No wrapped to show — set a different target month in /wrapped config or wait for next month."), false);
             }
             return Command.SINGLE_SUCCESS;
         }

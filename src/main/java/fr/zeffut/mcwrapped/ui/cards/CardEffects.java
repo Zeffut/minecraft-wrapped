@@ -4,9 +4,9 @@ import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.config.SparkleDensity;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 import java.util.Random;
 
@@ -50,7 +50,7 @@ public final class CardEffects {
 
     private CardEffects() {}
 
-    public static void renderGradient(final DrawContext ctx, final int width, final int height,
+    public static void renderGradient(final GuiGraphics ctx, final int width, final int height,
                                       final int top, final int bottom) {
         final int strips = 64;
         for (int i = 0; i < strips; i++) {
@@ -62,7 +62,7 @@ public final class CardEffects {
         }
     }
 
-    public static void renderHalo(final DrawContext ctx, final int cx, final int cy, final float now,
+    public static void renderHalo(final GuiGraphics ctx, final int cx, final int cy, final float now,
                                   final int baseColor) {
         final float breathe = 1f + 0.015f * (float) Math.sin(now * 0.18f);
         final int[] alphas = {30, 20, 14, 9, 6};
@@ -75,20 +75,20 @@ public final class CardEffects {
         }
     }
 
-    public static void drawRotatedLine(final DrawContext ctx, final int x1, final int y1, final int x2, final int y2,
+    public static void drawRotatedLine(final GuiGraphics ctx, final int x1, final int y1, final int x2, final int y2,
                                        final int thickness, final int color) {
         final float dx = x2 - x1;
         final float dy = y2 - y1;
         final float len = (float) Math.sqrt(dx * dx + dy * dy);
         final float angle = (float) Math.atan2(dy, dx);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(x1, y1);
-        ctx.getMatrices().rotate(angle);
+        ctx.pose().pushPose();
+        ctx.pose().translate(x1, y1);
+        ctx.pose().rotate(angle);
         ctx.fill(0, -thickness / 2, (int) len, thickness - thickness / 2, color);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    public static void drawRectBorder(final DrawContext ctx, final int x0, final int y0, final int x1, final int y1,
+    public static void drawRectBorder(final GuiGraphics ctx, final int x0, final int y0, final int x1, final int y1,
                                       final int thickness, final int color) {
         ctx.fill(x0, y0, x1, y0 + thickness, color);
         ctx.fill(x0, y1 - thickness, x1, y1, color);
@@ -96,7 +96,7 @@ public final class CardEffects {
         ctx.fill(x1 - thickness, y0, x1, y1, color);
     }
 
-    public static void renderKicker(final DrawContext ctx, final TextRenderer tr, final int width, final int yBase,
+    public static void renderKicker(final GuiGraphics ctx, final Font tr, final int width, final int yBase,
                                     final String label, final float now, final int startTick, final int duration) {
         final float t = clamp01((now - startTick) / (float) duration);
         if (t <= 0) return;
@@ -104,17 +104,17 @@ public final class CardEffects {
         final int alpha = (int) (ease * 200) & 0xFF;
         final int color = (alpha << 24) | (TEXT_KICKER & 0xFFFFFF);
         final int yOffset = (int) ((1f - ease) * 8);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(label)), width / 2, yBase + yOffset, color);
+        ctx.drawCenteredString(tr, Component.literal(spaceLetters(label)), width / 2, yBase + yOffset, color);
     }
 
-    public static void renderFadeOut(final DrawContext ctx, final int width, final int height, final float now,
+    public static void renderFadeOut(final GuiGraphics ctx, final int width, final int height, final float now,
                                      final int holdEnd, final int duration) {
         if (now <= holdEnd) return;
         final float t = clamp01((now - holdEnd) / (float) duration);
         final int alpha = (int) (t * 255) & 0xFF;
         // Start a new render layer so the overlay sits on top of any deferred batches
         // (block textures, spawn eggs, crafted item icons) that would otherwise show through.
-        ctx.createNewRootLayer();
+        ctx.flush();
         ctx.fill(0, 0, width, height, (alpha << 24));
     }
 
@@ -168,7 +168,7 @@ public final class CardEffects {
             }
         }
 
-        public void render(final DrawContext ctx, final float partial) {
+        public void render(final GuiGraphics ctx, final float partial) {
             for (final Sparkle s : sparkles) {
                 final float t = (globalTick - s.lifeStart + partial) / (float) s.lifeDuration;
                 if (t < 0 || t > 1) continue;

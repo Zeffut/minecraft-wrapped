@@ -3,12 +3,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.TimeOfDayTracker;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 public final class TimeOfDayCard implements Card {
 
@@ -48,7 +48,7 @@ public final class TimeOfDayCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_BIT.value(), 1.0f, 0.5f);
         started = true;
@@ -62,9 +62,9 @@ public final class TimeOfDayCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -82,7 +82,7 @@ public final class TimeOfDayCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderBars(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderBars(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final int barAreaW = 480;
         final int gap = 4;
         final int barW = (barAreaW - 23 * gap) / 24;
@@ -109,18 +109,18 @@ public final class TimeOfDayCard implements Card {
         final int labelColor = (alpha << 24) | (CardEffects.TEXT_KICKER & 0xFFFFFF);
         for (int h = 0; h < 24; h += 6) {
             final int x = xLeft + h * (barW + gap);
-            ctx.drawTextWithShadow(tr, Text.literal(String.format("%02dh", h)), x, yBottom + 4, labelColor);
+            ctx.drawString(tr, Component.literal(String.format("%02dh", h)), x, yBottom + 4, labelColor);
         }
     }
 
-    private void renderPeakLabel(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderPeakLabel(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         if (!hasData()) return;
         final float t = CardEffects.clamp01((now - LABEL_START) / (float) LABEL_DURATION);
         if (t <= 0) return;
         final int alpha = (int) (t * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         final String label = String.format("peak hour: %02dh — %s", peakHour, peakLabelText(peakHour));
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(label), width / 2, height / 2 + 80, color);
+        ctx.drawCenteredString(tr, Component.literal(label), width / 2, height / 2 + 80, color);
     }
 
     private static String peakLabelText(final int h) {

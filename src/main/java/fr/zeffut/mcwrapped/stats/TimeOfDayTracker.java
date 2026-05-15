@@ -7,7 +7,7 @@ import com.google.gson.JsonParser;
 import fr.zeffut.mcwrapped.McWrappedClient;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,7 +45,7 @@ public final class TimeOfDayTracker {
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
     }
 
-    private void onTick(final MinecraftClient client) {
+    private void onTick(final Minecraft client) {
         // Only count when in a world (avoids inflating from idling on title screen).
         if (client.world == null) return;
         final LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());

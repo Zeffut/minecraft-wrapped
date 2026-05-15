@@ -3,12 +3,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.archetype.Archetype;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 public final class ArchetypeCard implements Card {
 
@@ -37,7 +37,7 @@ public final class ArchetypeCard implements Card {
     public Archetype archetype() { return archetype; }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
         WrappedSounds.play(client, SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f);
         started = true;
@@ -53,18 +53,18 @@ public final class ArchetypeCard implements Card {
         for (int i = 0; i < DRUM_BEATS.length; i++) {
             if (ticks == DRUM_BEATS[i]) {
                 final float pitch = 0.8f + i * 0.15f;
-                WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f);
+                WrappedSounds.play(Minecraft.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f);
             }
         }
         if (ticks == FLIP_START + FLIP_DURATION / 2) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f);
         }
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -86,7 +86,7 @@ public final class ArchetypeCard implements Card {
 
     // ---------- Layers ----------
 
-    private void renderHaloPulse(final DrawContext ctx, final int width, final int height, final float now, final boolean revealed) {
+    private void renderHaloPulse(final GuiGraphics ctx, final int width, final int height, final float now, final boolean revealed) {
         final int cx = width / 2;
         final int cy = height / 2 + 8;
         // Drum buildup pulses: each drum beat triggers a fading expanding ring.
@@ -106,7 +106,7 @@ public final class ArchetypeCard implements Card {
         }
     }
 
-    private void renderFlipCard(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderFlipCard(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         // Card geometry.
         final int cardW = 360;
         final int cardH = 140;
@@ -137,9 +137,9 @@ public final class ArchetypeCard implements Card {
             scaleX *= 1f + 0.01f * (float) Math.sin((now - FLIP_START - FLIP_DURATION) * 0.15f);
         }
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(cx, cy);
-        ctx.getMatrices().scale(Math.max(0.001f, Math.abs(scaleX)), 1f);
+        ctx.pose().pushPose();
+        ctx.pose().translate(cx, cy);
+        ctx.pose().scale(Math.max(0.001f, Math.abs(scaleX)), 1f);
         // Card background.
         final int bgColor = showBack ? 0xFF12122A : 0xFF1A1A40;
         ctx.fill(-cardW / 2, -cardH / 2, cardW / 2, cardH / 2, bgColor);
@@ -152,21 +152,21 @@ public final class ArchetypeCard implements Card {
         } else {
             renderCardFront(ctx, tr);
         }
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    private void renderCardFront(final DrawContext ctx, final TextRenderer tr) {
+    private void renderCardFront(final GuiGraphics ctx, final Font tr) {
         // Big "?".
         final String q = "?";
         final float scale = 6f;
         final int width = (int) (tr.getWidth(q) * scale);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, q, (int) ((-width / 2f) / scale), (int) ((-5 * scale / 2f) / scale), 0xFFCBD5E1, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, q, (int) ((-width / 2f) / scale), (int) ((-5 * scale / 2f) / scale), 0xFFCBD5E1, true);
+        ctx.pose().popPose();
     }
 
-    private void renderCardBack(final DrawContext ctx, final TextRenderer tr) {
+    private void renderCardBack(final GuiGraphics ctx, final Font tr) {
         final String name = archetype.displayName().toUpperCase(java.util.Locale.ROOT);
         final String tagline = archetype.tagline();
 
@@ -177,16 +177,16 @@ public final class ArchetypeCard implements Card {
             scale -= 0.1f;
             w = (int) (tr.getWidth(name) * scale);
         }
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, name,
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, name,
                 (int) ((-w / 2f) / scale),
                 (int) ((-22) / scale),
                 CardEffects.ACCENT_GOLD, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
 
         // Tagline.
         final int tw = tr.getWidth(tagline);
-        ctx.drawText(tr, tagline, -tw / 2, 8, CardEffects.TEXT_DIM | 0xFF000000, true);
+        ctx.drawString(tr, tagline, -tw / 2, 8, CardEffects.TEXT_DIM | 0xFF000000, true);
     }
 }

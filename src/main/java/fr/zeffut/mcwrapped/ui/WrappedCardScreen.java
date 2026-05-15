@@ -3,12 +3,12 @@ package fr.zeffut.mcwrapped.ui;
 import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.config.TransitionStyle;
 import fr.zeffut.mcwrapped.ui.cards.Card;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyInput;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -38,7 +38,7 @@ public final class WrappedCardScreen extends Screen {
     private float speedAccumulator = 0f;
 
     public WrappedCardScreen(@Nullable final Screen parent, final List<Card> cards) {
-        super(Text.literal("Minecraft Wrapped"));
+        super(Component.literal("Minecraft Wrapped"));
         this.parent = parent;
         this.cards = cards;
     }
@@ -59,7 +59,7 @@ public final class WrappedCardScreen extends Screen {
     @Override
     protected void init() {
         if (!currentStarted && !cards.isEmpty()) {
-            cards.get(currentIndex).start(MinecraftClient.getInstance(), virtualWidth(), virtualHeight());
+            cards.get(currentIndex).start(Minecraft.getInstance(), virtualWidth(), virtualHeight());
             currentStarted = true;
         }
     }
@@ -109,30 +109,30 @@ public final class WrappedCardScreen extends Screen {
     private void advanceCard(final int vw, final int vh) {
         currentIndex++;
         if (currentIndex < cards.size()) {
-            cards.get(currentIndex).start(MinecraftClient.getInstance(), vw, vh);
+            cards.get(currentIndex).start(Minecraft.getInstance(), vw, vh);
         }
     }
 
     @Override
-    public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+    public void render(final GuiGraphics context, final int mouseX, final int mouseY, final float delta) {
         if (cards.isEmpty()) return;
         final float scale = renderScale();
         final int vw = virtualWidth();
         final int vh = virtualHeight();
 
-        context.getMatrices().pushMatrix();
-        context.getMatrices().scale(scale, scale);
+        context.pose().pushPose();
+        context.pose().scale(scale, scale);
         final int virtMouseX = Math.round(mouseX / scale);
         final int virtMouseY = Math.round(mouseY / scale);
         cards.get(currentIndex).render(context, vw, vh, virtMouseX, virtMouseY, delta);
-        context.getMatrices().popMatrix();
+        context.pose().popPose();
 
         if (transitionTicks >= 0) {
             renderTransition(context, delta);
         }
     }
 
-    private void renderTransition(final DrawContext context, final float delta) {
+    private void renderTransition(final GuiGraphics context, final float delta) {
         final float t = (transitionTicks + delta) / (TRANSITION_HALF * 2);
         final float clampedT = Math.max(0f, Math.min(1f, t));
         final float coverage = clampedT < 0.5f ? clampedT * 2f : (1f - clampedT) * 2f;
@@ -163,7 +163,7 @@ public final class WrappedCardScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+    public void renderBackground(final GuiGraphics context, final int mouseX, final int mouseY, final float delta) {
         // Cards draw their own background.
     }
 
@@ -194,7 +194,7 @@ public final class WrappedCardScreen extends Screen {
         if (targetIndex < 0 || targetIndex >= cards.size()) return;
         currentIndex = targetIndex;
         transitionTicks = -1;
-        cards.get(currentIndex).start(MinecraftClient.getInstance(), virtualWidth(), virtualHeight());
+        cards.get(currentIndex).start(Minecraft.getInstance(), virtualWidth(), virtualHeight());
     }
 
     @Override
@@ -214,7 +214,7 @@ public final class WrappedCardScreen extends Screen {
 
     @Override
     public void close() {
-        final MinecraftClient mc = MinecraftClient.getInstance();
+        final Minecraft mc = Minecraft.getInstance();
         if (mc != null) mc.setScreen(parent);
     }
 }

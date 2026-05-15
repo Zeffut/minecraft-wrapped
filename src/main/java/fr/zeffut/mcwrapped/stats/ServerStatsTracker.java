@@ -8,15 +8,15 @@ import fr.zeffut.mcwrapped.McWrappedClient;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.network.packet.c2s.play.ClientStatusC2SPacket;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.stat.Stat;
-import net.minecraft.stat.StatHandler;
-import net.minecraft.stat.StatType;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Registry;
+import net.minecraft.stats.Stat;
+import net.minecraft.stats.StatsCounter;
+import net.minecraft.stats.StatType;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,7 +89,7 @@ public final class ServerStatsTracker {
         return out;
     }
 
-    private void onTick(final MinecraftClient client) {
+    private void onTick(final Minecraft client) {
         if (client.world == null || client.isInSingleplayer() || client.getCurrentServerEntry() == null) return;
         ticksSinceRequest++;
         ticksSinceCapture++;
@@ -103,26 +103,26 @@ public final class ServerStatsTracker {
         }
     }
 
-    private void requestStats(final MinecraftClient client) {
+    private void requestStats(final Minecraft client) {
         if (client.player == null || client.player.networkHandler == null) return;
         try {
             client.player.networkHandler.sendPacket(
-                    new ClientStatusC2SPacket(ClientStatusC2SPacket.Mode.REQUEST_STATS));
+                    new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Mode.REQUEST_STATS));
         } catch (final RuntimeException e) {
             McWrappedClient.LOGGER.debug("REQUEST_STATS send failed: {}", e.getMessage());
         }
     }
 
-    private void captureFromHandler(final MinecraftClient client) {
+    private void captureFromHandler(final Minecraft client) {
         if (client.player == null) return;
-        final ServerInfo info = client.getCurrentServerEntry();
+        final ServerData info = client.getCurrentServerEntry();
         if (info == null || info.address == null) return;
 
-        final StatHandler handler = client.player.getStatHandler();
+        final StatsCounter handler = client.player.getStatHandler();
         final Map<String, Map<String, Long>> snapshot = new LinkedHashMap<>();
 
-        for (final StatType<?> type : Registries.STAT_TYPE) {
-            final Identifier categoryId = Registries.STAT_TYPE.getId(type);
+        for (final StatType<?> type : BuiltInRegistries.STAT_TYPE) {
+            final ResourceLocation categoryId = BuiltInRegistries.STAT_TYPE.getId(type);
             if (categoryId == null) continue;
             captureType(handler, type, categoryId.toString(), snapshot);
         }
@@ -136,14 +136,14 @@ public final class ServerStatsTracker {
         save();
     }
 
-    private static <T> void captureType(final StatHandler handler, final StatType<T> type, final String categoryStr,
+    private static <T> void captureType(final StatsCounter handler, final StatType<T> type, final String categoryStr,
                                         final Map<String, Map<String, Long>> snapshot) {
         final Registry<T> registry = type.getRegistry();
         final Map<String, Long> bucket = new LinkedHashMap<>();
         for (final Stat<T> stat : type) {
             final int v = handler.getStat(stat);
             if (v <= 0) continue;
-            final Identifier valueId = registry.getId(stat.getValue());
+            final ResourceLocation valueId = registry.getId(stat.getValue());
             if (valueId == null) continue;
             bucket.put(valueId.toString(), (long) v);
         }

@@ -2,12 +2,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 import java.time.YearMonth;
 import java.time.format.TextStyle;
@@ -62,7 +62,7 @@ public final class IntroCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         WrappedSounds.play(client, SoundEvents.ENTITY_ENDER_PEARL_THROW, 1.0f, 0.5f);
         // Reset shared sparkle timeline so a second wrapped in the same session doesn't inherit a
         // stale tick offset (which would freeze sparkles at alpha=0 until the counter caught up).
@@ -82,17 +82,17 @@ public final class IntroCard implements Card {
         for (final Sparkle s : sparkles) s.tick(rng, width, height);
 
         if (ticks == LETTER_START) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BELL.value(), 1.2f, 0.7f);
         }
         if (ticks == FOOTER_START) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.4f, 0.6f);
         }
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         renderGradient(ctx, width, height);
         renderSparkles(ctx, partial);
@@ -111,7 +111,7 @@ public final class IntroCard implements Card {
 
     // ---------- Layers ----------
 
-    private void renderGradient(final DrawContext ctx, final int width, final int height) {
+    private void renderGradient(final GuiGraphics ctx, final int width, final int height) {
         // Vertical interp from CardEffects.bgTop() to CardEffects.bgBottom() via thin horizontal strips.
         final int strips = 64;
         for (int i = 0; i < strips; i++) {
@@ -123,7 +123,7 @@ public final class IntroCard implements Card {
         }
     }
 
-    private void renderSparkles(final DrawContext ctx, final float partial) {
+    private void renderSparkles(final GuiGraphics ctx, final float partial) {
         for (final Sparkle s : sparkles) {
             final int a = Math.round(s.alpha(partial) * 255f) & 0xFF;
             if (a == 0) continue;
@@ -132,7 +132,7 @@ public final class IntroCard implements Card {
         }
     }
 
-    private void renderHalo(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderHalo(final GuiGraphics ctx, final int width, final int height, final float now) {
         // 5 concentric square rings centered on the hero word, breathing scale.
         final float breathe = 1f + 0.015f * (float) Math.sin(now * 0.18f);
         final int cx = width / 2;
@@ -147,7 +147,7 @@ public final class IntroCard implements Card {
         }
     }
 
-    private void renderSweep(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderSweep(final GuiGraphics ctx, final int width, final int height, final float now) {
         // Horizontal accent line that grows from center, then fades.
         final float t = (now - SWEEP_START) / (float) SWEEP_DURATION;
         if (t <= 0) return;
@@ -168,7 +168,7 @@ public final class IntroCard implements Card {
         ctx.fill(cx - halfW, cy + 2, cx + halfW, cy + 3, glow);
     }
 
-    private void renderKicker(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderKicker(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = clamp01((now - KICKER_IN_START) / (float) KICKER_IN_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -178,10 +178,10 @@ public final class IntroCard implements Card {
         final String text = "Y O U R   M I N E C R A F T";
         final int yBase = height / 2 - 70;
         final int yOffset = (int) ((1f - ease) * 8);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(text), width / 2, yBase + yOffset, color);
+        ctx.drawCenteredString(tr, Component.literal(text), width / 2, yBase + yOffset, color);
     }
 
-    private void renderHeroMonth(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderHeroMonth(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float scale = 4.5f;
         final int totalWidth = (int) (tr.getWidth(monthName) * scale);
         final int startX = width / 2 - totalWidth / 2;
@@ -192,10 +192,10 @@ public final class IntroCard implements Card {
         if (anyLetterT > 0) {
             final int shadowAlpha = (int) (anyLetterT * 100) & 0xFF;
             final int shadowColor = (shadowAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF);
-            ctx.getMatrices().pushMatrix();
-            ctx.getMatrices().scale(scale, scale);
-            ctx.drawText(tr, monthName, (int) ((startX + 3) / scale), (int) ((baseY + 4) / scale), shadowColor, false);
-            ctx.getMatrices().popMatrix();
+            ctx.pose().pushPose();
+            ctx.pose().scale(scale, scale);
+            ctx.drawString(tr, monthName, (int) ((startX + 3) / scale), (int) ((baseY + 4) / scale), shadowColor, false);
+            ctx.pose().popPose();
         }
 
         float x = startX;
@@ -209,16 +209,16 @@ public final class IntroCard implements Card {
                 final int alpha = (int) (ease * 255) & 0xFF;
                 final float yOffset = (1f - ease) * 28f;
                 final int color = (alpha << 24) | (TEXT_HERO & 0xFFFFFF);
-                ctx.getMatrices().pushMatrix();
-                ctx.getMatrices().scale(scale, scale);
-                ctx.drawText(tr, ch, (int) (x / scale), (int) ((baseY + yOffset) / scale), color, true);
-                ctx.getMatrices().popMatrix();
+                ctx.pose().pushPose();
+                ctx.pose().scale(scale, scale);
+                ctx.drawString(tr, ch, (int) (x / scale), (int) ((baseY + yOffset) / scale), color, true);
+                ctx.pose().popPose();
             }
             x += charPx;
         }
     }
 
-    private void renderFooter(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderFooter(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         // "2026 WRAPPED"
         final float ft = clamp01((now - FOOTER_START) / (float) FOOTER_DURATION);
         if (ft <= 0) return;
@@ -230,12 +230,12 @@ public final class IntroCard implements Card {
         final int footerWidth = (int) (tr.getWidth(yearLabel) * footerScale);
         final int yBase = height / 2 + 70;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(footerScale, footerScale);
+        ctx.pose().pushPose();
+        ctx.pose().scale(footerScale, footerScale);
         final int fx = (int) ((width / 2 - footerWidth / 2) / footerScale);
         final int fy = (int) (yBase / footerScale);
-        ctx.drawText(tr, yearLabel, fx, fy, color, true);
-        ctx.getMatrices().popMatrix();
+        ctx.drawString(tr, yearLabel, fx, fy, color, true);
+        ctx.pose().popPose();
 
         // Underline draws from center outward.
         final float ut = clamp01((now - UNDERLINE_START) / (float) UNDERLINE_DURATION);
@@ -248,7 +248,7 @@ public final class IntroCard implements Card {
         }
     }
 
-    private void renderFadeOut(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderFadeOut(final GuiGraphics ctx, final int width, final int height, final float now) {
         if (now <= HOLD_END) return;
         final float t = clamp01((now - HOLD_END) / (float) FADE_OUT_DURATION);
         final int alpha = (int) (t * 255) & 0xFF;
@@ -257,7 +257,7 @@ public final class IntroCard implements Card {
 
     // ---------- Helpers ----------
 
-    private static void drawRectBorder(final DrawContext ctx, final int x0, final int y0, final int x1, final int y1, final int thickness, final int color) {
+    private static void drawRectBorder(final GuiGraphics ctx, final int x0, final int y0, final int x1, final int y1, final int thickness, final int color) {
         ctx.fill(x0, y0, x1, y0 + thickness, color);
         ctx.fill(x0, y1 - thickness, x1, y1, color);
         ctx.fill(x0, y0, x0 + thickness, y1, color);

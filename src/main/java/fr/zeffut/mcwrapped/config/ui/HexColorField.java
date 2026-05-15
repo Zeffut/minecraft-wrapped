@@ -1,17 +1,17 @@
 package fr.zeffut.mcwrapped.config.ui;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.network.chat.Component;
 
 import java.util.function.IntConsumer;
 
 /**
- * Text field accepting hex color strings like {@code #RRGGBB} or {@code RRGGBB}. Forwards a fully
+ * Component field accepting hex color strings like {@code #RRGGBB} or {@code RRGGBB}. Forwards a fully
  * opaque ARGB int to {@link #onValid} every time the user types a valid 6-hex input.
  */
-public final class HexColorField extends TextFieldWidget {
+public final class HexColorField extends EditBox {
 
     private static final int VALID_BORDER = 0xFF22C55E;
     private static final int INVALID_BORDER = 0xFFEF4444;
@@ -19,7 +19,7 @@ public final class HexColorField extends TextFieldWidget {
     private boolean lastValid = true;
 
     public HexColorField(final int x, final int y, final int w, final int h, final int initialArgb, final IntConsumer onValid) {
-        super(MinecraftClient.getInstance().textRenderer, x, y, w, h, Text.literal("hex"));
+        super(Minecraft.getInstance().font, x, y, w, h, Component.literal("hex"));
         this.onValid = onValid;
         setMaxLength(7);
         setText(String.format("#%06X", initialArgb & 0xFFFFFF));
@@ -38,7 +38,7 @@ public final class HexColorField extends TextFieldWidget {
     }
 
     @Override
-    public void renderWidget(final DrawContext ctx, final int mouseX, final int mouseY, final float delta) {
+    public void renderWidget(final GuiGraphics ctx, final int mouseX, final int mouseY, final float delta) {
         super.renderWidget(ctx, mouseX, mouseY, delta);
         // Visual cue: green ring when value parses, red when not.
         final int color = lastValid ? VALID_BORDER : INVALID_BORDER;

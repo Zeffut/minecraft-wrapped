@@ -6,10 +6,10 @@ import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
 import fr.zeffut.mcwrapped.ui.cards.WrappedSequence;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
 
 import java.time.YearMonth;
 import java.time.format.TextStyle;
@@ -37,19 +37,19 @@ public final class WrappedTitleButton {
             // Top-right — clear of the bottom Mojang/version/copyright line.
             final int x = scaledWidth - BUTTON_WIDTH - MARGIN;
             final int y = MARGIN;
-            final ButtonWidget button = ButtonWidget.builder(
-                            Text.translatable("mcwrapped.button.ready", monthLabel(wrapped.month())),
+            final Button button = Button.builder(
+                            Component.translatable("mcwrapped.button.ready", monthLabel(wrapped.month())),
                             btn -> openWrapped(snapshots, screen, wrapped))
-                    .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
+                    .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                     .build();
             Screens.getButtons(screen).add(button);
         });
     }
 
-    private static void openWrapped(final SnapshotManager snapshots, final net.minecraft.client.gui.screen.Screen parent, final WrappedFile wrapped) {
+    private static void openWrapped(final SnapshotManager snapshots, final net.minecraft.client.gui.screens.Screen parent, final WrappedFile wrapped) {
         snapshots.saveWrapped(wrapped.asConsumed());
         final WrappedContext context = new WrappedContext(wrapped.month(), wrapped.delta());
-        MinecraftClient.getInstance().setScreen(new WrappedCardScreen(parent, WrappedSequence.full(context)));
+        Minecraft.getInstance().setScreen(new WrappedCardScreen(parent, WrappedSequence.full(context)));
     }
 
     private static String monthLabel(final YearMonth month) {

@@ -4,12 +4,12 @@ import fr.zeffut.mcwrapped.config.CardId;
 import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.ui.cards.CardEffects;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public final class CardOrderScreen extends Screen {
     private List<CardId> order;
 
     public CardOrderScreen(@Nullable final Screen parent) {
-        super(Text.literal("Cards"));
+        super(Component.literal("Cards"));
         this.parent = parent;
         this.order = new ArrayList<>(ConfigManager.get().cardOrder);
     }
@@ -48,40 +48,40 @@ public final class CardOrderScreen extends Screen {
 
             // Toggle button (ON/OFF).
             final boolean enabled = cfg.isCardEnabled(id);
-            addDrawableChild(ButtonWidget.builder(
-                    Text.literal(enabled ? "ON" : "OFF").formatted(enabled ? Formatting.GREEN : Formatting.GRAY),
+            addDrawableChild(Button.builder(
+                    Component.literal(enabled ? "ON" : "OFF").formatted(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY),
                     btn -> {
                         cfg.enabledCards.put(id, !cfg.isCardEnabled(id));
                         ConfigManager.save();
                         rebuild();
-                    }).dimensions(xLeft, y, 40, rowH).build());
+                    }).bounds(xLeft, y, 40, rowH).build());
 
             // Up arrow.
-            addDrawableChild(ButtonWidget.builder(Text.literal("▲"), btn -> moveUp(rowIndex))
-                    .dimensions(xLeft + 50, y, 24, rowH).build());
+            addDrawableChild(Button.builder(Component.literal("▲"), btn -> moveUp(rowIndex))
+                    .bounds(xLeft + 50, y, 24, rowH).build());
 
             // Down arrow.
-            addDrawableChild(ButtonWidget.builder(Text.literal("▼"), btn -> moveDown(rowIndex))
-                    .dimensions(xLeft + 78, y, 24, rowH).build());
+            addDrawableChild(Button.builder(Component.literal("▼"), btn -> moveDown(rowIndex))
+                    .bounds(xLeft + 78, y, 24, rowH).build());
 
             // Card name (not a button — drawn in render()).
         }
 
         // Reset + Back at the bottom. The two action buttons share contentW so they always fit.
         final int actionW = (contentW - 10) / 2;
-        addDrawableChild(ButtonWidget.builder(Text.literal("Enable all"), btn -> {
+        addDrawableChild(Button.builder(Component.literal("Enable all"), btn -> {
             for (final CardId id : CardId.values()) cfg.enabledCards.put(id, true);
             ConfigManager.save();
             rebuild();
-        }).dimensions(xLeft, height - 50, actionW, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Default order"), btn -> {
+        }).bounds(xLeft, height - 50, actionW, 20).build());
+        addDrawableChild(Button.builder(Component.literal("Default order"), btn -> {
             this.order = new ArrayList<>(List.of(CardId.values()));
             cfg.cardOrder = new ArrayList<>(this.order);
             ConfigManager.save();
             rebuild();
-        }).dimensions(xLeft + actionW + 10, height - 50, actionW, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Back"), btn -> close())
-                .dimensions(width / 2 - 60, height - 25, 120, 20).build());
+        }).bounds(xLeft + actionW + 10, height - 50, actionW, 20).build());
+        addDrawableChild(Button.builder(Component.literal("Back"), btn -> close())
+                .bounds(width / 2 - 60, height - 25, 120, 20).build());
     }
 
     private void moveUp(final int i) {
@@ -108,12 +108,12 @@ public final class CardOrderScreen extends Screen {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int mouseX, final int mouseY, final float delta) {
+    public void render(final GuiGraphics ctx, final int mouseX, final int mouseY, final float delta) {
         CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
         super.render(ctx, mouseX, mouseY, delta);
 
-        ctx.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("CARDS — order & visibility").formatted(Formatting.GOLD),
+        ctx.drawCenteredString(font,
+                Component.literal("CARDS — order & visibility").formatted(ChatFormatting.GOLD),
                 width / 2, 25, 0xFFFFFFFF);
 
         // Card names rendered on top of buttons.
@@ -128,19 +128,19 @@ public final class CardOrderScreen extends Screen {
             final CardId id = order.get(i);
             final int y = yTop + i * (rowH + gap);
             final String num = String.format("%2d.", i + 1);
-            ctx.drawTextWithShadow(textRenderer, Text.literal(num + " " + id.displayName()),
+            ctx.drawString(font, Component.literal(num + " " + id.displayName()),
                     xLeft + 110, y + 7, 0xFFE5E7EB);
         }
     }
 
     @Override
-    public void renderBackground(final DrawContext ctx, final int mouseX, final int mouseY, final float delta) {
+    public void renderBackground(final GuiGraphics ctx, final int mouseX, final int mouseY, final float delta) {
         // Painted in render().
     }
 
     @Override
     public void close() {
-        final MinecraftClient mc = MinecraftClient.getInstance();
+        final Minecraft mc = Minecraft.getInstance();
         if (mc != null) mc.setScreen(parent);
     }
 }

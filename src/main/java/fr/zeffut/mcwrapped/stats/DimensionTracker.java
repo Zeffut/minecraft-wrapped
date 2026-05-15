@@ -7,8 +7,8 @@ import com.google.gson.JsonParser;
 import fr.zeffut.mcwrapped.McWrappedClient;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,9 +47,9 @@ public final class DimensionTracker {
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
     }
 
-    private void onTick(final MinecraftClient client) {
+    private void onTick(final Minecraft client) {
         if (client.world == null) return;
-        final Identifier dimId = client.world.getRegistryKey().getValue();
+        final ResourceLocation dimId = client.world.getRegistryKey().getValue();
         final String monthKey = YearMonth.now(ZoneId.systemDefault()).format(MONTH_FMT);
         byMonth.computeIfAbsent(monthKey, k -> new LinkedHashMap<>())
                 .merge(dimId.toString(), 1L, Long::sum);

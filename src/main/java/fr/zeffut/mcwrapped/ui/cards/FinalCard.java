@@ -6,12 +6,12 @@ import fr.zeffut.mcwrapped.export.ClipboardHelper;
 import fr.zeffut.mcwrapped.export.ImageExporter;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -53,7 +53,7 @@ public final class FinalCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(22, width, height);
         WrappedSounds.play(client, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f);
         started = true;
@@ -71,9 +71,9 @@ public final class FinalCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -109,7 +109,7 @@ public final class FinalCard implements Card {
 
     // --- Render layers ------------------------------------------------------
 
-    private void renderTitle(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderTitle(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - TITLE_START) / (float) TITLE_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -119,8 +119,8 @@ public final class FinalCard implements Card {
 
         // Kicker.
         final int kickerColor = (alpha << 24) | (CardEffects.TEXT_KICKER & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr,
-                Text.literal("Y O U R   M I N E C R A F T   W R A P P E D"),
+        ctx.drawCenteredString(tr,
+                Component.literal("Y O U R   M I N E C R A F T   W R A P P E D"),
                 width / 2, yKicker, kickerColor);
 
         // Big month + year.
@@ -131,13 +131,13 @@ public final class FinalCard implements Card {
         final int monthX = width / 2 - monthWidth / 2;
         final int monthY = yKicker + 16;
         final int monthColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, monthLabel, (int) (monthX / scale), (int) (monthY / scale), monthColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, monthLabel, (int) (monthX / scale), (int) (monthY / scale), monthColor, true);
+        ctx.pose().popPose();
     }
 
-    private void renderTiles(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderTiles(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final int cols = 2;
         final int rows = (tiles.size() + cols - 1) / cols;
         final int tileW = 200;
@@ -163,7 +163,7 @@ public final class FinalCard implements Card {
         }
     }
 
-    private void renderTile(final DrawContext ctx, final TextRenderer tr, final int x, final int y, final int w, final int h,
+    private void renderTile(final GuiGraphics ctx, final Font tr, final int x, final int y, final int w, final int h,
                             final int alpha, final Tile tile) {
         // Glass bg.
         final int bgColor = (Math.min(alpha, 28) << 24) | 0xFFFFFF;
@@ -174,7 +174,7 @@ public final class FinalCard implements Card {
 
         // Label.
         final int labelColor = (alpha << 24) | (CardEffects.TEXT_KICKER & 0xFFFFFF);
-        ctx.drawTextWithShadow(tr, Text.literal(tile.label), x + 10, y + 8, labelColor);
+        ctx.drawString(tr, Component.literal(tile.label), x + 10, y + 8, labelColor);
 
         // Value (auto-shrink scale if too wide).
         float vScale = 1.6f;
@@ -184,16 +184,16 @@ public final class FinalCard implements Card {
             vw = (int) (tr.getWidth(tile.value) * vScale);
         }
         final int valueColor = (alpha << 24) | (tile.color & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(vScale, vScale);
-        ctx.drawText(tr, tile.value,
+        ctx.pose().pushPose();
+        ctx.pose().scale(vScale, vScale);
+        ctx.drawString(tr, tile.value,
                 (int) ((x + 10) / vScale),
                 (int) ((y + 24) / vScale),
                 valueColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    private void renderButtons(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now,
+    private void renderButtons(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now,
                                final int mouseX, final int mouseY) {
         final float t = CardEffects.clamp01((now - BUTTONS_START) / (float) BUTTONS_DURATION);
         if (t <= 0) return;
@@ -223,25 +223,25 @@ public final class FinalCard implements Card {
         final int saveBg = saveHover ? 0xFF2EE36C : CardEffects.accent();
         ctx.fill(saveX, saveY, saveX + saveW, saveY + saveH, withAlpha(saveBg, alpha));
         CardEffects.drawRectBorder(ctx, saveX, saveY, saveX + saveW, saveY + saveH, 1, withAlpha(0x16A34A, alpha));
-        ctx.drawCenteredTextWithShadow(tr, Text.literal("Save Image"),
+        ctx.drawCenteredString(tr, Component.literal("Save Image"),
                 saveX + saveW / 2, saveY + 9, (alpha << 24) | 0x0F172A);
 
         // Copy button — accent gold.
         final int copyBg = copyHover ? 0xFFFEDF8E : CardEffects.ACCENT_GOLD;
         ctx.fill(copyX, copyY, copyX + copyW, copyY + copyH, withAlpha(copyBg, alpha));
         CardEffects.drawRectBorder(ctx, copyX, copyY, copyX + copyW, copyY + copyH, 1, withAlpha(0xCA8A04, alpha));
-        ctx.drawCenteredTextWithShadow(tr, Text.literal("Copy"),
+        ctx.drawCenteredString(tr, Component.literal("Copy"),
                 copyX + copyW / 2, copyY + 9, (alpha << 24) | 0x0F172A);
 
         // Close button — neutral.
         final int closeBg = closeHover ? 0xFF334155 : 0xFF1E293B;
         ctx.fill(closeX, closeY, closeX + closeW, closeY + closeH, withAlpha(closeBg, alpha));
         CardEffects.drawRectBorder(ctx, closeX, closeY, closeX + closeW, closeY + closeH, 1, withAlpha(0x475569, alpha));
-        ctx.drawCenteredTextWithShadow(tr, Text.literal("Close"),
+        ctx.drawCenteredString(tr, Component.literal("Close"),
                 closeX + closeW / 2, closeY + 9, (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF));
     }
 
-    private void renderToast(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderToast(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         if (toastMessage == null || toastStartTick < 0) return;
         final float age = now - toastStartTick;
         final float lifetime = TOAST_DURATION_TICKS;
@@ -252,7 +252,7 @@ public final class FinalCard implements Card {
         if (alpha == 0) return;
 
         final int color = (alpha << 24) | (CardEffects.ACCENT_GOLD & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(toastMessage), width / 2, height - 24, color);
+        ctx.drawCenteredString(tr, Component.literal(toastMessage), width / 2, height - 24, color);
     }
 
     // --- Logic --------------------------------------------------------------
@@ -263,14 +263,14 @@ public final class FinalCard implements Card {
         new Thread(() -> {
             try {
                 ClipboardHelper.copyImage(ImageExporter.render(context));
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     toastMessage = "Copied to clipboard!";
                     toastStartTick = ticks;
-                    WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f);
+                    WrappedSounds.play(Minecraft.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f);
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     toastMessage = "Copy failed: " + e.getMessage();
                     toastStartTick = ticks;
                 });
@@ -284,7 +284,7 @@ public final class FinalCard implements Card {
         new Thread(() -> {
             try {
                 final Path file = ImageExporter.export(context);
-                final MinecraftClient client = MinecraftClient.getInstance();
+                final Minecraft client = Minecraft.getInstance();
                 client.execute(() -> {
                     toastMessage = "Saved to screenshots/wrapped/" + file.getFileName();
                     toastStartTick = ticks;
@@ -292,7 +292,7 @@ public final class FinalCard implements Card {
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Image export failed", e);
-                MinecraftClient.getInstance().execute(() -> {
+                Minecraft.getInstance().execute(() -> {
                     toastMessage = "Export failed: " + e.getMessage();
                     toastStartTick = ticks;
                 });

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.zeffut.mcwrapped.McWrappedClient;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,7 +25,7 @@ public final class StatsReader {
 
     private StatsReader() {}
 
-    public static Optional<Aggregated> readAggregated(final MinecraftClient client,
+    public static Optional<Aggregated> readAggregated(final Minecraft client,
                                                       final ServerPlayTimeTracker serverPlayTime,
                                                       final ServerStatsTracker serverStats) {
         final UUID uuid = client.getSession().getUuidOrNull();

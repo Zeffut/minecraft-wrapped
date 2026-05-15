@@ -2,12 +2,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 public final class TimeSpentCard implements Card {
 
@@ -31,7 +31,7 @@ public final class TimeSpentCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(18, width, height);
         WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_HARP.value(), 1.5f, 0.4f);
         started = true;
@@ -45,9 +45,9 @@ public final class TimeSpentCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -65,7 +65,7 @@ public final class TimeSpentCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderClock(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderClock(final GuiGraphics ctx, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - CLOCK_START) / (float) CLOCK_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -110,7 +110,7 @@ public final class TimeSpentCard implements Card {
         ctx.fill(cx - 4, cy - 4, cx + 4, cy + 4, dotColor);
     }
 
-    private void renderCounter(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderCounter(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - COUNTER_START) / (float) COUNTER_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -130,16 +130,16 @@ public final class TimeSpentCard implements Card {
         final int alpha = (int) (CardEffects.clamp01(t * 1.5f) * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, text,
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, text,
                 (int) ((width / 2f - textWidth * scale / 2f) / scale),
                 (int) ((height / 2f + 5 - 5 * scale / 2f) / scale),
                 color, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    private void renderSub(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderSub(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - SUB_START) / (float) SUB_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -148,7 +148,7 @@ public final class TimeSpentCard implements Card {
         final int yOffset = (int) ((1f - ease) * 6);
 
         final String hint = funFact(context.playTimeTicks());
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(hint), width / 2, height / 2 + 135 + yOffset, color);
+        ctx.drawCenteredString(tr, Component.literal(hint), width / 2, height / 2 + 135 + yOffset, color);
     }
 
     private static String funFact(final long playTimeTicks) {

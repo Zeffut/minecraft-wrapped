@@ -2,12 +2,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 public final class SocialCard implements Card {
 
@@ -33,7 +33,7 @@ public final class SocialCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
         WrappedSounds.play(client, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.4f, 0.5f);
         started = true;
@@ -47,9 +47,9 @@ public final class SocialCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -70,7 +70,7 @@ public final class SocialCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderAvatarOrbits(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderAvatarOrbits(final GuiGraphics ctx, final int width, final int height, final float now) {
         // Concentric ring of small "head" dots orbiting slowly behind the hero number — symbolizes other players.
         final float t = CardEffects.clamp01((now - KICKER_START) / 30f);
         if (t <= 0) return;
@@ -96,7 +96,7 @@ public final class SocialCard implements Card {
         }
     }
 
-    private void renderHeroNumber(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderHeroNumber(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - COUNTER_START) / (float) COUNTER_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -109,16 +109,16 @@ public final class SocialCard implements Card {
         final int alpha = (int) (CardEffects.clamp01(t * 1.5f) * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, text,
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, text,
                 (int) ((width / 2f - textWidth * scale / 2f) / scale),
                 (int) ((height / 2f - 30 - 5 * scale / 2f) / scale),
                 color, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    private void renderHeroLabel(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderHeroLabel(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - LABEL_START) / (float) LABEL_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -127,10 +127,10 @@ public final class SocialCard implements Card {
 
         final String label = context.playersMet() == 1 ? "PLAYER MET" : "PLAYERS MET";
         final int color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(label)), width / 2, height / 2 + 22 + yOffset, color);
+        ctx.drawCenteredString(tr, Component.literal(spaceLetters(label)), width / 2, height / 2 + 22 + yOffset, color);
     }
 
-    private void renderSplitBar(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderSplitBar(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - BAR_START) / (float) BAR_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -162,16 +162,16 @@ public final class SocialCard implements Card {
         final int labelAlpha = (int) (ease * 200) & 0xFF;
         if (soloPct > 0.05f) {
             final String soloLabel = Math.round(soloPct * 100) + "% SOLO";
-            ctx.drawTextWithShadow(tr, Text.literal(soloLabel), barX, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accent() & 0xFFFFFF));
+            ctx.drawString(tr, Component.literal(soloLabel), barX, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accent() & 0xFFFFFF));
         }
         if (1 - soloPct > 0.05f) {
             final String srvLabel = Math.round((1 - soloPct) * 100) + "% SERVERS";
             final int w = tr.getWidth(srvLabel);
-            ctx.drawTextWithShadow(tr, Text.literal(srvLabel), barX + barWidth - w, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF));
+            ctx.drawString(tr, Component.literal(srvLabel), barX + barWidth - w, barY + barH + 6, (labelAlpha << 24) | (CardEffects.accentSecondary() & 0xFFFFFF));
         }
     }
 
-    private void renderFooter(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderFooter(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - FOOTER_START) / (float) FOOTER_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -187,7 +187,7 @@ public final class SocialCard implements Card {
             sb.append("across ").append(servers).append(servers == 1 ? " server" : " servers");
         }
         if (sb.length() == 0) return;
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(sb.toString()), width / 2, height / 2 + 110, color);
+        ctx.drawCenteredString(tr, Component.literal(sb.toString()), width / 2, height / 2 + 110, color);
     }
 
     private static String spaceLetters(final String s) {

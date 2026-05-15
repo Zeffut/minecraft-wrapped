@@ -17,7 +17,7 @@ import fr.zeffut.mcwrapped.ui.WrappedReadyToast;
 import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public final class McWrappedClient implements ClientModInitializer {
      * On every game start: refresh the cumulative-stats snapshot for the current month.
      * If the previous snapshot belongs to an earlier month, finalize a wrapped file for it.
      */
-    private void captureAndFinalize(final MinecraftClient client) {
+    private void captureAndFinalize(final Minecraft client) {
         final Optional<StatsReader.Aggregated> aggOpt = StatsReader.readAggregated(client, serverTracker, serverStatsTracker);
         if (aggOpt.isEmpty() || aggOpt.get().total().isEmpty()) {
             LOGGER.info("No stats data found yet — come back next month for your first Wrapped!");

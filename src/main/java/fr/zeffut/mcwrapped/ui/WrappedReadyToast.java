@@ -4,10 +4,10 @@ import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.network.chat.Component;
 
 import java.time.YearMonth;
 import java.time.format.TextStyle;
@@ -31,7 +31,7 @@ public final class WrappedReadyToast {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> tryShow(client, snapshots));
     }
 
-    private static void tryShow(final MinecraftClient client, final SnapshotManager snapshots) {
+    private static void tryShow(final Minecraft client, final SnapshotManager snapshots) {
         if (shownThisSession || client == null) return;
         final fr.zeffut.mcwrapped.config.McWrappedConfig cfg = fr.zeffut.mcwrapped.config.ConfigManager.get();
         if (!cfg.autoTriggerEnabled) return;
@@ -42,10 +42,10 @@ public final class WrappedReadyToast {
         shownThisSession = true;
 
         final WrappedFile wf = ready.get();
-        client.getToastManager().add(new SystemToast(
+        client.getToasts().add(new SystemToast(
                 SystemToast.Type.PERIODIC_NOTIFICATION,
-                Text.literal("Minecraft Wrapped"),
-                Text.literal("Your " + monthLabel(wf.month()) + " is ready")
+                Component.literal("Minecraft Wrapped"),
+                Component.literal("Your " + monthLabel(wf.month()) + " is ready")
         ));
     }
 

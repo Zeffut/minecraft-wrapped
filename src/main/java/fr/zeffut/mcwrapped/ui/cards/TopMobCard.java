@@ -2,17 +2,17 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.SpawnEggItem;
-import net.minecraft.registry.Registries;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +41,7 @@ public final class TopMobCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(16, width, height);
         eggStack = top.map(e -> spawnEggFor(e.getKey())).orElse(ItemStack.EMPTY);
         WrappedSounds.play(client, SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f);
@@ -54,14 +54,14 @@ public final class TopMobCard implements Card {
         ticks++;
         sparkles.tick(width, height);
         if (ticks == EGG_START) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f);
         }
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -84,15 +84,15 @@ public final class TopMobCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderEmpty(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderEmpty(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - LABEL_START) / 12f);
         if (t <= 0) return;
         final int alpha = (int) (t * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal("a peaceful month"), width / 2, height / 2, color);
+        ctx.drawCenteredString(tr, Component.literal("a peaceful month"), width / 2, height / 2, color);
     }
 
-    private void renderEgg(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderEgg(final GuiGraphics ctx, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - EGG_START) / (float) EGG_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_BOUNCE.apply(t);
@@ -103,16 +103,16 @@ public final class TopMobCard implements Card {
         final int cy = height / 2 - 30;
         final float rotation = now * 0.04f;
 
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().translate(cx, cy);
-        ctx.getMatrices().rotate(rotation);
-        ctx.getMatrices().scale(scale, scale);
+        ctx.pose().pushPose();
+        ctx.pose().translate(cx, cy);
+        ctx.pose().rotate(rotation);
+        ctx.pose().scale(scale, scale);
         // Item is 16x16 — center on origin.
-        ctx.drawItem(eggStack, -8, -8);
-        ctx.getMatrices().popMatrix();
+        ctx.renderItem(eggStack, -8, -8);
+        ctx.pose().popPose();
     }
 
-    private void renderLabel(final DrawContext ctx, final TextRenderer tr, final int width, final int height,
+    private void renderLabel(final GuiGraphics ctx, final Font tr, final int width, final int height,
                              final float now, final Map.Entry<String, Long> entry) {
         final float t = CardEffects.clamp01((now - LABEL_START) / (float) LABEL_DURATION);
         if (t <= 0) return;
@@ -121,35 +121,35 @@ public final class TopMobCard implements Card {
         final int yOffset = (int) ((1f - ease) * 12);
 
         // Mob name.
-        final Text name = entityName(entry.getKey());
+        final Component name = entityName(entry.getKey());
         final float nameScale = 2.4f;
         final int nameWidth = (int) (tr.getWidth(name) * nameScale);
         final int nameX = width / 2 - nameWidth / 2;
         final int nameY = height / 2 + 70 + yOffset;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
-        ctx.drawText(tr, name, (int) (nameX / nameScale), (int) (nameY / nameScale), nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushPose();
+        ctx.pose().scale(nameScale, nameScale);
+        ctx.drawString(tr, name, (int) (nameX / nameScale), (int) (nameY / nameScale), nameColor, true);
+        ctx.pose().popPose();
 
         // Count.
         final String count = entry.getValue() + " killed";
         final int countColor = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(count), width / 2, nameY + 30, countColor);
+        ctx.drawCenteredString(tr, Component.literal(count), width / 2, nameY + 30, countColor);
     }
 
     private static ItemStack spawnEggFor(final String entityId) {
-        final Identifier id = Identifier.tryParse(entityId);
+        final ResourceLocation id = ResourceLocation.tryParse(entityId);
         if (id == null) return ItemStack.EMPTY;
-        final EntityType<?> type = Registries.ENTITY_TYPE.get(id);
+        final EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(id);
         if (type == null) return ItemStack.EMPTY;
         final SpawnEggItem egg = SpawnEggItem.forEntity(type);
         return egg == null ? ItemStack.EMPTY : new ItemStack(egg);
     }
 
-    private static Text entityName(final String id) {
+    private static Component entityName(final String id) {
         final String[] parts = id.split(":");
-        if (parts.length != 2) return Text.literal(id);
-        return Text.translatable("entity." + parts[0] + "." + parts[1]);
+        if (parts.length != 2) return Component.literal(id);
+        return Component.translatable("entity." + parts[0] + "." + parts[1]);
     }
 }

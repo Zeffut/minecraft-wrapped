@@ -9,8 +9,8 @@ import fr.zeffut.mcwrapped.McWrappedClient;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ServerInfo;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,9 +45,9 @@ public final class ServerPlayTimeTracker {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> save());
     }
 
-    private void onTick(final MinecraftClient client) {
+    private void onTick(final Minecraft client) {
         if (client.world == null || client.isInSingleplayer()) return;
-        final ServerInfo info = client.getCurrentServerEntry();
+        final ServerData info = client.getCurrentServerEntry();
         if (info == null || info.address == null) return;
 
         final String key = info.address.toLowerCase();

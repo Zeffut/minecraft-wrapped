@@ -3,12 +3,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ public final class TopWorldCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         WrappedSounds.play(client, SoundEvents.BLOCK_CHEST_OPEN, 1.4f, 0.4f);
         started = true;
@@ -53,9 +53,9 @@ public final class TopWorldCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -90,7 +90,7 @@ public final class TopWorldCard implements Card {
         return sb.toString();
     }
 
-    private void renderMapGridBackground(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderMapGridBackground(final GuiGraphics ctx, final int width, final int height, final float now) {
         // Subtle dotted-grid pattern, fades in over time; evokes a treasure map.
         final float t = CardEffects.clamp01((now - FRAME_START) / 18f);
         if (t <= 0) return;
@@ -104,15 +104,15 @@ public final class TopWorldCard implements Card {
         }
     }
 
-    private void renderEmpty(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now) {
+    private void renderEmpty(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - NAME_START) / 12f);
         if (t <= 0) return;
         final int alpha = (int) (t * 255) & 0xFF;
         final int color = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal("no worlds tracked"), width / 2, height / 2, color);
+        ctx.drawCenteredString(tr, Component.literal("no worlds tracked"), width / 2, height / 2, color);
     }
 
-    private void renderFrame(final DrawContext ctx, final int width, final int height, final float now) {
+    private void renderFrame(final GuiGraphics ctx, final int width, final int height, final float now) {
         final float t = CardEffects.clamp01((now - FRAME_START) / (float) FRAME_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -148,7 +148,7 @@ public final class TopWorldCard implements Card {
         ctx.fill(x0 + 2, y0 + 2, x1 - 2, y1 - 2, (glassAlpha << 24) | 0xFFFFFF);
     }
 
-    private void renderName(final DrawContext ctx, final TextRenderer tr, final int width, final int height,
+    private void renderName(final GuiGraphics ctx, final Font tr, final int width, final int height,
                             final float now, final String worldKey, final long playTimeTicks) {
         final float t = CardEffects.clamp01((now - NAME_START) / (float) NAME_DURATION);
         if (t <= 0) return;
@@ -162,7 +162,7 @@ public final class TopWorldCard implements Card {
         // Small SOURCE badge, floating above the frame as a tag chip.
         final String badge = WorldKey.badge(worldKey);
         final int badgeColor = (alpha << 24) | ((isServer ? CardEffects.accentSecondary() : CardEffects.accent()) & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(spaceLetters(badge)), width / 2, height / 2 - 78 + yOffset, badgeColor);
+        ctx.drawCenteredString(tr, Component.literal(spaceLetters(badge)), width / 2, height / 2 - 78 + yOffset, badgeColor);
 
         // World name (truncated if too long). Vertically centered with frame center (height/2 - 5).
         final String displayName = worldName.length() > 22 ? worldName.substring(0, 21) + "…" : worldName;
@@ -171,10 +171,10 @@ public final class TopWorldCard implements Card {
         final int nameX = width / 2 - nameWidth / 2;
         final int nameY = height / 2 - 24 + yOffset;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
-        ctx.drawText(tr, displayName, (int) (nameX / nameScale), (int) (nameY / nameScale), nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().pushPose();
+        ctx.pose().scale(nameScale, nameScale);
+        ctx.drawString(tr, displayName, (int) (nameX / nameScale), (int) (nameY / nameScale), nameColor, true);
+        ctx.pose().popPose();
 
         // Play time inside the frame, dimmer.
         final long minutes = playTimeTicks / 20 / 60;
@@ -182,10 +182,10 @@ public final class TopWorldCard implements Card {
                 ? (minutes / 60) + "h " + String.format("%02d", minutes % 60) + "m here"
                 : minutes + "m here";
         final int timeColor = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(timeText), width / 2, nameY + 30, timeColor);
+        ctx.drawCenteredString(tr, Component.literal(timeText), width / 2, nameY + 30, timeColor);
     }
 
-    private void renderShareBar(final DrawContext ctx, final TextRenderer tr, final int width, final int height,
+    private void renderShareBar(final GuiGraphics ctx, final Font tr, final int width, final int height,
                                  final float now, final long topPlayTime) {
         final float bt = CardEffects.clamp01((now - BAR_START) / (float) BAR_DURATION);
         if (bt <= 0) return;
@@ -218,7 +218,7 @@ public final class TopWorldCard implements Card {
                     : "% of your month";
             final String label = pct + suffix;
             final int color = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);
-            ctx.drawCenteredTextWithShadow(tr, Text.literal(label), width / 2, barY + 16, color);
+            ctx.drawCenteredString(tr, Component.literal(label), width / 2, barY + 16, color);
         }
     }
 }

@@ -3,12 +3,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.DimensionTracker;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.Locale;
@@ -44,7 +44,7 @@ public final class DimensionCard implements Card {
     public boolean hasData() { return !top.isEmpty(); }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
         WrappedSounds.play(client, SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f);
         started = true;
@@ -58,9 +58,9 @@ public final class DimensionCard implements Card {
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
@@ -79,7 +79,7 @@ public final class DimensionCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderRow(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now,
+    private void renderRow(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now,
                            final int index, final Map.Entry<String, Long> entry) {
         final float t = CardEffects.clamp01((now - FIRST_ROW_START - index * ROW_STAGGER) / (float) ROW_DURATION);
         if (t <= 0) return;
@@ -105,13 +105,13 @@ public final class DimensionCard implements Card {
         final String rank = "#" + (index + 1);
         final float rankScale = 3.4f;
         final int rankColor = (alpha << 24) | (CardEffects.ACCENT_GOLD & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(rankScale, rankScale);
-        ctx.drawText(tr, rank,
+        ctx.pose().pushPose();
+        ctx.pose().scale(rankScale, rankScale);
+        ctx.drawString(tr, rank,
                 (int) (x / rankScale),
                 (int) ((yBase + 12) / rankScale),
                 rankColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
 
         // Dim color swatch.
         final int swatchX = x + 78;
@@ -122,18 +122,18 @@ public final class DimensionCard implements Card {
         final String name = displayDimensionName(entry.getKey());
         final float nameScale = 1.7f;
         final int nameColor = (alpha << 24) | (CardEffects.TEXT_HERO & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(nameScale, nameScale);
-        ctx.drawText(tr, name,
+        ctx.pose().pushPose();
+        ctx.pose().scale(nameScale, nameScale);
+        ctx.drawString(tr, name,
                 (int) ((swatchX + 48) / nameScale),
                 (int) ((yBase + 14) / nameScale),
                 nameColor, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
 
         final long pct = total > 0 ? Math.round(entry.getValue() * 100.0 / total) : 0;
         final long minutes = entry.getValue() / 20 / 60;
         final String details = pct + "% • " + (minutes >= 60 ? (minutes / 60) + "h " + (minutes % 60) + "m" : minutes + "m");
-        ctx.drawTextWithShadow(tr, Text.literal(details),
+        ctx.drawString(tr, Component.literal(details),
                 swatchX + 48, yBase + rowHeight - 18, (alpha << 24) | (CardEffects.accent() & 0xFFFFFF));
     }
 

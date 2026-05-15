@@ -7,7 +7,7 @@ import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.stats.WorldKey;
 import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 import javax.imageio.ImageIO;
 import java.awt.BasicStroke;
@@ -221,8 +221,8 @@ public final class ImageExporter {
 
     private static String currentIgn() {
         try {
-            final MinecraftClient mc = MinecraftClient.getInstance();
-            return mc != null && mc.getSession() != null ? mc.getSession().getUsername() : "";
+            final Minecraft mc = Minecraft.getInstance();
+            return mc != null && mc.getSession() != null ? mc.getUser().getName() : "";
         } catch (final RuntimeException e) {
             return "";
         }

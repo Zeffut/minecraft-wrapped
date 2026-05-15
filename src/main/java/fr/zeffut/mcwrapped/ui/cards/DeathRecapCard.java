@@ -2,12 +2,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +36,7 @@ public final class DeathRecapCard implements Card {
     }
 
     @Override
-    public void start(final MinecraftClient client, final int width, final int height) {
+    public void start(final Minecraft client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(8, width, height);
         WrappedSounds.play(client, SoundEvents.ENTITY_PLAYER_HURT, 0.7f, 0.6f);
         started = true;
@@ -48,17 +48,17 @@ public final class DeathRecapCard implements Card {
         ticks++;
         sparkles.tick(width, height);
         if (deaths == 0 && ticks == COUNTER_START) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f);
         }
         if (deaths > 0 && ticks == COUNTER_START) {
-            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f);
+            WrappedSounds.play(Minecraft.getInstance(), SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f);
         }
     }
 
     @Override
-    public void render(final DrawContext ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
+    public void render(final GuiGraphics ctx, final int width, final int height, final int mouseX, final int mouseY, final float partial) {
         final float now = ticks + partial;
-        final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
+        final Font tr = Minecraft.getInstance().font;
 
         final boolean perfectStreak = deaths == 0;
 
@@ -86,7 +86,7 @@ public final class DeathRecapCard implements Card {
         return ticks >= HOLD_END + 18;
     }
 
-    private void renderHero(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now, final boolean perfect) {
+    private void renderHero(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now, final boolean perfect) {
         final float t = CardEffects.clamp01((now - COUNTER_START) / (float) COUNTER_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -105,16 +105,16 @@ public final class DeathRecapCard implements Card {
         final float scale = 6f;
         final int textWidth = tr.getWidth(text);
         final int color = (alpha << 24) | (colorBase & 0xFFFFFF);
-        ctx.getMatrices().pushMatrix();
-        ctx.getMatrices().scale(scale, scale);
-        ctx.drawText(tr, text,
+        ctx.pose().pushPose();
+        ctx.pose().scale(scale, scale);
+        ctx.drawString(tr, text,
                 (int) ((width / 2f - textWidth * scale / 2f) / scale),
                 (int) ((height / 2f - 5 * scale / 2f) / scale),
                 color, true);
-        ctx.getMatrices().popMatrix();
+        ctx.pose().popPose();
     }
 
-    private void renderCause(final DrawContext ctx, final TextRenderer tr, final int width, final int height, final float now, final boolean perfect) {
+    private void renderCause(final GuiGraphics ctx, final Font tr, final int width, final int height, final float now, final boolean perfect) {
         final float t = CardEffects.clamp01((now - CAUSE_START) / (float) CAUSE_DURATION);
         if (t <= 0) return;
         final float ease = Easing.EASE_OUT_CUBIC.apply(t);
@@ -136,7 +136,7 @@ public final class DeathRecapCard implements Card {
             label = "mostly killed by " + causeName + (roast.isEmpty() ? "" : " — " + roast);
             color = (alpha << 24) | (CardEffects.ACCENT_RED & 0xFFFFFF);
         }
-        ctx.drawCenteredTextWithShadow(tr, Text.literal(label), width / 2, height / 2 + 80 + yOffset, color);
+        ctx.drawCenteredString(tr, Component.literal(label), width / 2, height / 2 + 80 + yOffset, color);
     }
 
     private static String entityName(final String id) {

@@ -5,12 +5,12 @@ import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.ui.cards.CardEffects;
 import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
 import fr.zeffut.mcwrapped.ui.cards.WrappedSequence;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.YearMonth;
@@ -29,7 +29,7 @@ public final class WrappedHistoryScreen extends Screen {
     private List<WrappedFile> entries = List.of();
 
     public WrappedHistoryScreen(@Nullable final Screen parent, final SnapshotManager snapshots) {
-        super(Text.literal("Wrapped History"));
+        super(Component.literal("Wrapped History"));
         this.parent = parent;
         this.snapshots = snapshots;
     }
@@ -53,12 +53,12 @@ public final class WrappedHistoryScreen extends Screen {
                     ? (minutes / 60) + "h " + String.format(Locale.ROOT, "%02d", minutes % 60) + "m"
                     : minutes + "m";
             final String label = monthLabel(wf.month()) + "  ·  " + time;
-            addDrawableChild(ButtonWidget.builder(Text.literal(label), btn -> replay(wf))
-                    .dimensions(xLeft, y, contentW, rowH - 4).build());
+            addDrawableChild(Button.builder(Component.literal(label), btn -> replay(wf))
+                    .bounds(xLeft, y, contentW, rowH - 4).build());
         }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Back"), btn -> close())
-                .dimensions(width / 2 - 60, height - 30, 120, 20).build());
+        addDrawableChild(Button.builder(Component.literal("Back"), btn -> close())
+                .bounds(width / 2 - 60, height - 30, 120, 20).build());
     }
 
     private void replay(final WrappedFile wf) {
@@ -67,30 +67,30 @@ public final class WrappedHistoryScreen extends Screen {
     }
 
     @Override
-    public void render(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+    public void render(final GuiGraphics context, final int mouseX, final int mouseY, final float delta) {
         // Solid dark background to match the wrapped aesthetic.
         CardEffects.renderGradient(context, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
 
         super.render(context, mouseX, mouseY, delta);
 
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("WRAPPED HISTORY").formatted(Formatting.GOLD), width / 2, 30, 0xFFFFFFFF);
+        context.drawCenteredString(font,
+                Component.literal("WRAPPED HISTORY").formatted(ChatFormatting.GOLD), width / 2, 30, 0xFFFFFFFF);
 
         if (entries.isEmpty()) {
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal("No wrapped to show yet — come back next month."),
+            context.drawCenteredString(font,
+                    Component.literal("No wrapped to show yet — come back next month."),
                     width / 2, height / 2, 0xFFCBD5E1);
         }
     }
 
     @Override
-    public void renderBackground(final DrawContext context, final int mouseX, final int mouseY, final float delta) {
+    public void renderBackground(final GuiGraphics context, final int mouseX, final int mouseY, final float delta) {
         // We paint our own background.
     }
 
     @Override
     public void close() {
-        final MinecraftClient mc = MinecraftClient.getInstance();
+        final Minecraft mc = Minecraft.getInstance();
         if (mc != null) mc.setScreen(parent);
     }
 
