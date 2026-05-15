@@ -1,5 +1,8 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.config.ConfigManager;
+import fr.zeffut.mcwrapped.config.McWrappedConfig;
+import fr.zeffut.mcwrapped.config.SparkleDensity;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -10,18 +13,36 @@ import java.util.Random;
 /**
  * Shared rendering helpers for cards: gradients, halo rings, sparkles, kicker text,
  * fade-out, and standard color/timing constants.
+ *
+ * <p>The theme-driven colors ({@link #bgTop()}, {@link #bgBottom()}, {@link #accent()},
+ * {@link #accentSecondary()}) read live from {@link ConfigManager}. The cards that historically
+ * referenced {@code CardEffects.BG_TOP} now call these accessors so they automatically respect
+ * the user's chosen palette without further changes.
  */
 public final class CardEffects {
 
+    /** Default-theme background colors. Kept as constants for places that genuinely want the
+     * mod's original look (e.g. the config screen itself, history list). */
     public static final int BG_TOP = 0xFF0F0F23;
     public static final int BG_BOTTOM = 0xFF1E1B4B;
     public static final int BG_TOP_RED = 0xFF1F0A0A;
     public static final int BG_BOTTOM_RED = 0xFF4C0E0E;
 
-    public static final int ACCENT_GREEN = 0xFF22C55E;
-    public static final int ACCENT_INDIGO = 0xFF4338CA;
+    /** Semantic colors that aren't theme-driven (gold = highlight, red = death/error). */
     public static final int ACCENT_GOLD = 0xFFFCD34D;
     public static final int ACCENT_RED = 0xFFEF4444;
+
+    // Theme-driven accessors --------------------------------------------------
+
+    public static int bgTop() { return ConfigManager.get().resolvedBgTop(); }
+    public static int bgBottom() { return ConfigManager.get().resolvedBgBottom(); }
+    public static int accent() { return ConfigManager.get().resolvedAccent(); }
+    public static int accentSecondary() {
+        final McWrappedConfig cfg = ConfigManager.get();
+        // Use the user-defined accent-2 only when on CUSTOM; presets reuse a sensible indigo.
+        return cfg.theme == fr.zeffut.mcwrapped.config.ColorTheme.CUSTOM
+                ? cfg.customAccentSecondary : 0xFF4338CA;
+    }
 
     public static final int TEXT_HERO = 0xFFF8FAFC;
     public static final int TEXT_KICKER = 0xFF94A3B8;
@@ -133,8 +154,9 @@ public final class CardEffects {
         private int globalTick = 0;
 
         public Sparkles(final int count, final int width, final int height) {
-            sparkles = new Sparkle[count];
-            for (int i = 0; i < count; i++) sparkles[i] = new Sparkle(rng, width, height, globalTick);
+            final int scaled = Math.max(0, Math.round(count * ConfigManager.get().sparkleDensity.multiplier()));
+            sparkles = new Sparkle[scaled];
+            for (int i = 0; i < scaled; i++) sparkles[i] = new Sparkle(rng, width, height, globalTick);
         }
 
         public void tick(final int width, final int height) {

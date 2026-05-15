@@ -1,8 +1,14 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.config.CardId;
+import fr.zeffut.mcwrapped.config.ConfigManager;
+import fr.zeffut.mcwrapped.config.McWrappedConfig;
+
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public final class WrappedSequence {
 
@@ -12,54 +18,69 @@ public final class WrappedSequence {
 
     private WrappedSequence() {}
 
+    /**
+     * Build the full ordered sequence using the user's configured order and enable flags.
+     * Cards that don't pass their relevance threshold (e.g. zero distance) are still skipped — the
+     * config only ever <em>reduces</em> the sequence; it never inserts cards that have no data.
+     */
     public static List<Card> full(final WrappedContext context) {
+        final McWrappedConfig cfg = ConfigManager.get();
+        final Map<CardId, Supplier<Card>> factories = factories(context);
+        final Map<CardId, Boolean> relevance = relevance(context);
+
         final List<Card> cards = new ArrayList<>();
-        cards.add(new IntroCard(context.month()));
-
-        if (context.playTimeTicks() >= MIN_PLAY_TICKS) {
-            cards.add(new TimeSpentCard(context));
+        for (final CardId id : cfg.cardOrder) {
+            if (!cfg.isCardEnabled(id)) continue;
+            if (!relevance.getOrDefault(id, Boolean.FALSE)) continue;
+            final Supplier<Card> factory = factories.get(id);
+            if (factory != null) cards.add(factory.get());
         }
-
-        // Bonus: session info, only if we have at least one session in the month.
-        final LongestSessionCard sessionCard = new LongestSessionCard(context);
-        if (sessionCard.hasData()) cards.add(sessionCard);
-
-        // Bonus: time-of-day distribution.
-        final TimeOfDayCard timeOfDay = new TimeOfDayCard(context);
-        if (timeOfDay.hasData()) cards.add(timeOfDay);
-
-        if (!context.topWorlds(1).isEmpty()) {
-            cards.add(new TopWorldCard(context));
+        // Ensure the user always sees at least the intro+final pair, even if their filters wiped
+        // out everything in between.
+        if (cards.isEmpty()) {
+            cards.add(new IntroCard(context.month()));
+            cards.add(new FinalCard(context));
         }
-
-        // Bonus: dimensions explored.
-        final DimensionCard dimensionCard = new DimensionCard(context);
-        if (dimensionCard.hasData()) cards.add(dimensionCard);
-
-        if (context.serverTicks() >= SOCIAL_MIN_SERVER_TICKS || context.playersMet() > 0 || context.messagesSent() > 0) {
-            cards.add(new SocialCard(context));
-        }
-        if (totalDistanceCm(context) >= 100_000L) {
-            cards.add(new DistanceCard(context));
-        }
-        if (!context.topMined(1).isEmpty()) {
-            cards.add(new TopBlocksCard(context));
-        }
-        if (!context.topKilled(1).isEmpty()) {
-            cards.add(new TopMobCard(context));
-        }
-        if (context.delta().total("minecraft:crafted") > 0) {
-            cards.add(new CraftingCard(context));
-        }
-        if (context.playTimeTicks() >= DEATHS_MIN_PLAY_TICKS) {
-            cards.add(new DeathRecapCard(context));
-        }
-        if (context.playTimeTicks() >= MIN_PLAY_TICKS) {
-            cards.add(new ArchetypeCard(context));
-        }
-        cards.add(new FinalCard(context));
-
         return cards;
+    }
+
+    private static Map<CardId, Supplier<Card>> factories(final WrappedContext context) {
+        final EnumMap<CardId, Supplier<Card>> m = new EnumMap<>(CardId.class);
+        m.put(CardId.INTRO,            () -> new IntroCard(context.month()));
+        m.put(CardId.TIME_SPENT,       () -> new TimeSpentCard(context));
+        m.put(CardId.LONGEST_SESSION,  () -> new LongestSessionCard(context));
+        m.put(CardId.TIME_OF_DAY,      () -> new TimeOfDayCard(context));
+        m.put(CardId.TOP_WORLD,        () -> new TopWorldCard(context));
+        m.put(CardId.DIMENSION,        () -> new DimensionCard(context));
+        m.put(CardId.SOCIAL,           () -> new SocialCard(context));
+        m.put(CardId.DISTANCE,         () -> new DistanceCard(context));
+        m.put(CardId.TOP_BLOCKS,       () -> new TopBlocksCard(context));
+        m.put(CardId.TOP_MOB,          () -> new TopMobCard(context));
+        m.put(CardId.CRAFTING,         () -> new CraftingCard(context));
+        m.put(CardId.DEATH_RECAP,      () -> new DeathRecapCard(context));
+        m.put(CardId.ARCHETYPE,        () -> new ArchetypeCard(context));
+        m.put(CardId.FINAL,            () -> new FinalCard(context));
+        return m;
+    }
+
+    private static Map<CardId, Boolean> relevance(final WrappedContext context) {
+        final EnumMap<CardId, Boolean> m = new EnumMap<>(CardId.class);
+        m.put(CardId.INTRO, true);
+        m.put(CardId.TIME_SPENT, context.playTimeTicks() >= MIN_PLAY_TICKS);
+        m.put(CardId.LONGEST_SESSION, new LongestSessionCard(context).hasData());
+        m.put(CardId.TIME_OF_DAY, new TimeOfDayCard(context).hasData());
+        m.put(CardId.TOP_WORLD, !context.topWorlds(1).isEmpty());
+        m.put(CardId.DIMENSION, new DimensionCard(context).hasData());
+        m.put(CardId.SOCIAL, context.serverTicks() >= SOCIAL_MIN_SERVER_TICKS
+                || context.playersMet() > 0 || context.messagesSent() > 0);
+        m.put(CardId.DISTANCE, totalDistanceCm(context) >= 100_000L);
+        m.put(CardId.TOP_BLOCKS, !context.topMined(1).isEmpty());
+        m.put(CardId.TOP_MOB, !context.topKilled(1).isEmpty());
+        m.put(CardId.CRAFTING, context.delta().total("minecraft:crafted") > 0);
+        m.put(CardId.DEATH_RECAP, context.playTimeTicks() >= DEATHS_MIN_PLAY_TICKS);
+        m.put(CardId.ARCHETYPE, context.playTimeTicks() >= MIN_PLAY_TICKS);
+        m.put(CardId.FINAL, true);
+        return m;
     }
 
     private static long totalDistanceCm(final WrappedContext ctx) {

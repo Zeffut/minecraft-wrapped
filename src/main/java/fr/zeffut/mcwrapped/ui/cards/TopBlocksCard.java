@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -44,8 +45,7 @@ public final class TopBlocksCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_STONE_BREAK, 1.4f, 0.6f);
         started = true;
     }
 
@@ -56,8 +56,7 @@ public final class TopBlocksCard implements Card {
         sparkles.tick(width, height);
         for (int i = 0; i < top.size(); i++) {
             if (ticks == FIRST_ROW_START + i * ROW_STAGGER) {
-                MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.master(SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f));
+                WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.BLOCK_STONE_BREAK, 1.0f + i * 0.3f, 0.5f);
             }
         }
     }
@@ -67,7 +66,7 @@ public final class TopBlocksCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         CardEffects.renderKicker(ctx, tr, width, 50, "TOP BLOCKS MINED", now, KICKER_START, KICKER_DURATION);
@@ -158,7 +157,7 @@ public final class TopBlocksCard implements Card {
         final float countScale = 2.4f;
         final int countWidth = (int) (tr.getWidth(count) * countScale);
         final int countX = width / 2 + 240 - countWidth - 8;
-        final int countColor = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+        final int countColor = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         ctx.getMatrices().pushMatrix();
         ctx.getMatrices().scale(countScale, countScale);
         ctx.drawText(tr, count,
