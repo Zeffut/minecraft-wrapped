@@ -77,7 +77,11 @@ public final class ImageExporter {
                 .resolve("screenshots").resolve("wrapped")
                 .resolve("wrapped-" + ctx.month().format(DateTimeFormatter.ofPattern("yyyy-MM")) + ".png");
         Files.createDirectories(out.getParent());
-        ImageIO.write(img, "PNG", out.toFile());
+        try {
+            ImageIO.write(img, "PNG", out.toFile());
+        } catch (final IOException e) {
+            throw new IOException("Failed to write Wrapped PNG to " + out + " (disk full or read-only filesystem?): " + e.getMessage(), e);
+        }
         return out;
     }
 
