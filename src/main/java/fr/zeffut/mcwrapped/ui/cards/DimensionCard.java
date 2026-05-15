@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.stats.DimensionTracker;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
@@ -45,8 +46,7 @@ public final class DimensionCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(14, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f));
+        WrappedSounds.play(client, SoundEvents.BLOCK_PORTAL_TRAVEL, 1.5f, 0.3f);
         started = true;
     }
 
@@ -62,7 +62,7 @@ public final class DimensionCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         CardEffects.renderKicker(ctx, tr, width, 50, "DIMENSIONS EXPLORED", now, KICKER_START, KICKER_DURATION);
@@ -134,7 +134,7 @@ public final class DimensionCard implements Card {
         final long minutes = entry.getValue() / 20 / 60;
         final String details = pct + "% • " + (minutes >= 60 ? (minutes / 60) + "h " + (minutes % 60) + "m" : minutes + "m");
         ctx.drawTextWithShadow(tr, Text.literal(details),
-                swatchX + 48, yBase + rowHeight - 18, (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF));
+                swatchX + 48, yBase + rowHeight - 18, (alpha << 24) | (CardEffects.accent() & 0xFFFFFF));
     }
 
     private static int colorForDimension(final String id) {

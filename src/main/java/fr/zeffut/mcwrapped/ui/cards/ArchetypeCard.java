@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.archetype.Archetype;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
@@ -38,8 +39,7 @@ public final class ArchetypeCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(20, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f));
+        WrappedSounds.play(client, SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 0.4f);
         started = true;
     }
 
@@ -53,13 +53,11 @@ public final class ArchetypeCard implements Card {
         for (int i = 0; i < DRUM_BEATS.length; i++) {
             if (ticks == DRUM_BEATS[i]) {
                 final float pitch = 0.8f + i * 0.15f;
-                MinecraftClient.getInstance().getSoundManager().play(
-                        PositionedSoundInstance.ui(SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f));
+                WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.BLOCK_NOTE_BLOCK_BASEDRUM.value(), pitch, 0.7f);
             }
         }
         if (ticks == FLIP_START + FLIP_DURATION / 2) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f);
         }
     }
 
@@ -68,7 +66,7 @@ public final class ArchetypeCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         final boolean revealed = now >= FLIP_START + FLIP_DURATION / 2f;
@@ -146,7 +144,7 @@ public final class ArchetypeCard implements Card {
         final int bgColor = showBack ? 0xFF12122A : 0xFF1A1A40;
         ctx.fill(-cardW / 2, -cardH / 2, cardW / 2, cardH / 2, bgColor);
         // Border (gold when revealed, indigo before).
-        final int borderColor = showBack ? CardEffects.ACCENT_GOLD : CardEffects.ACCENT_INDIGO;
+        final int borderColor = showBack ? CardEffects.ACCENT_GOLD : CardEffects.accentSecondary();
         CardEffects.drawRectBorder(ctx, -cardW / 2, -cardH / 2, cardW / 2, cardH / 2, 2, borderColor);
 
         if (showBack) {

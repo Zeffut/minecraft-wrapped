@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -37,8 +38,7 @@ public final class DeathRecapCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(8, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_HURT, 0.7f, 0.6f));
+        WrappedSounds.play(client, SoundEvents.ENTITY_PLAYER_HURT, 0.7f, 0.6f);
         started = true;
     }
 
@@ -48,12 +48,10 @@ public final class DeathRecapCard implements Card {
         ticks++;
         sparkles.tick(width, height);
         if (deaths == 0 && ticks == COUNTER_START) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_PLAYER_LEVELUP, 1.2f, 0.5f);
         }
         if (deaths > 0 && ticks == COUNTER_START) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_GHAST_HURT, 0.8f, 0.4f);
         }
     }
 
@@ -65,13 +63,13 @@ public final class DeathRecapCard implements Card {
         final boolean perfectStreak = deaths == 0;
 
         if (perfectStreak) {
-            CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+            CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         } else {
             CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP_RED, CardEffects.BG_BOTTOM_RED);
         }
         sparkles.render(ctx, partial);
         CardEffects.renderHalo(ctx, width / 2, height / 2,
-                now, perfectStreak ? CardEffects.ACCENT_GREEN : CardEffects.ACCENT_RED);
+                now, perfectStreak ? CardEffects.accent() : CardEffects.ACCENT_RED);
 
         CardEffects.renderKicker(ctx, tr, width, height / 2 - 70,
                 perfectStreak ? "PERFECT STREAK" : "DEATHS",
@@ -98,7 +96,7 @@ public final class DeathRecapCard implements Card {
         final int colorBase;
         if (perfect) {
             text = "0";
-            colorBase = CardEffects.ACCENT_GREEN;
+            colorBase = CardEffects.accent();
         } else {
             text = String.valueOf(Math.round(ease * deaths));
             colorBase = CardEffects.TEXT_HERO;
@@ -127,7 +125,7 @@ public final class DeathRecapCard implements Card {
         final int color;
         if (perfect) {
             label = "not a single death";
-            color = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+            color = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         } else if (topCauses.isEmpty()) {
             label = "deaths: " + deaths;
             color = (alpha << 24) | (CardEffects.TEXT_DIM & 0xFFFFFF);

@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.McWrappedClient;
 import fr.zeffut.mcwrapped.export.ClipboardHelper;
 import fr.zeffut.mcwrapped.export.ImageExporter;
@@ -54,8 +55,7 @@ public final class FinalCard implements Card {
     @Override
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(22, width, height);
-        client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f));
+        WrappedSounds.play(client, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.2f, 0.6f);
         started = true;
     }
 
@@ -75,7 +75,7 @@ public final class FinalCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
 
         renderTitle(ctx, tr, width, height, now);
@@ -220,7 +220,7 @@ public final class FinalCard implements Card {
         final boolean closeHover = inRect(mouseX, mouseY, closeX, closeY, closeW, closeH);
 
         // Save button — accent green.
-        final int saveBg = saveHover ? 0xFF2EE36C : CardEffects.ACCENT_GREEN;
+        final int saveBg = saveHover ? 0xFF2EE36C : CardEffects.accent();
         ctx.fill(saveX, saveY, saveX + saveW, saveY + saveH, withAlpha(saveBg, alpha));
         CardEffects.drawRectBorder(ctx, saveX, saveY, saveX + saveW, saveY + saveH, 1, withAlpha(0x16A34A, alpha));
         ctx.drawCenteredTextWithShadow(tr, Text.literal("Save Image"),
@@ -266,8 +266,7 @@ public final class FinalCard implements Card {
                 MinecraftClient.getInstance().execute(() -> {
                     toastMessage = "Copied to clipboard!";
                     toastStartTick = ticks;
-                    MinecraftClient.getInstance().getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f));
+                    WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f);
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
@@ -289,8 +288,7 @@ public final class FinalCard implements Card {
                 client.execute(() -> {
                     toastMessage = "Saved to screenshots/wrapped/" + file.getFileName();
                     toastStartTick = ticks;
-                    client.getSoundManager().play(
-                            PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f));
+                    WrappedSounds.play(client, SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f);
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Image export failed", e);
@@ -317,7 +315,7 @@ public final class FinalCard implements Card {
                 : minutes + "m";
 
         final String topWorld = ctx.topWorlds(1).stream().findFirst()
-                .map(e -> WorldKey.displayName(e.getKey()))
+                .map(e -> WorldKey.displayNameMasked(e.getKey(), 1))
                 .orElse("—");
         final String topMob = ctx.topKilled(1).stream().findFirst()
                 .map(e -> stripNs(e.getKey()) + " ×" + e.getValue())
@@ -331,14 +329,14 @@ public final class FinalCard implements Card {
                 : 0;
 
         return List.of(
-                new Tile("PLAY TIME", time, CardEffects.ACCENT_GREEN),
+                new Tile("PLAY TIME", time, CardEffects.accent()),
                 new Tile("PLAYERS MET", String.valueOf(ctx.playersMet()), CardEffects.ACCENT_GOLD),
                 new Tile("TOP WORLD", topWorld, CardEffects.TEXT_HERO),
-                new Tile("ON SERVERS", sharePct + "%", CardEffects.ACCENT_INDIGO),
+                new Tile("ON SERVERS", sharePct + "%", CardEffects.accentSecondary()),
                 new Tile("TOP MOB", topMob, CardEffects.TEXT_HERO),
                 new Tile("TOP BLOCK", topBlock, CardEffects.TEXT_HERO),
                 new Tile("DEATHS", String.valueOf(ctx.deaths()), CardEffects.ACCENT_RED),
-                new Tile("MESSAGES", String.valueOf(ctx.messagesSent()), CardEffects.ACCENT_GREEN)
+                new Tile("MESSAGES", String.valueOf(ctx.messagesSent()), CardEffects.accent())
         );
     }
 

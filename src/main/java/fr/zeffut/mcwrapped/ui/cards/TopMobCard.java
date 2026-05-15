@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped.ui.cards;
 
+import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -43,8 +44,7 @@ public final class TopMobCard implements Card {
     public void start(final MinecraftClient client, final int width, final int height) {
         sparkles = new CardEffects.Sparkles(16, width, height);
         eggStack = top.map(e -> spawnEggFor(e.getKey())).orElse(ItemStack.EMPTY);
-        client.getSoundManager().play(
-                PositionedSoundInstance.ui(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f));
+        WrappedSounds.play(client, SoundEvents.ENTITY_ZOMBIE_AMBIENT, 0.6f, 0.5f);
         started = true;
     }
 
@@ -54,8 +54,7 @@ public final class TopMobCard implements Card {
         ticks++;
         sparkles.tick(width, height);
         if (ticks == EGG_START) {
-            MinecraftClient.getInstance().getSoundManager().play(
-                    PositionedSoundInstance.ui(SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f));
+            WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.6f);
         }
     }
 
@@ -64,9 +63,9 @@ public final class TopMobCard implements Card {
         final float now = ticks + partial;
         final TextRenderer tr = MinecraftClient.getInstance().textRenderer;
 
-        CardEffects.renderGradient(ctx, width, height, CardEffects.BG_TOP, CardEffects.BG_BOTTOM);
+        CardEffects.renderGradient(ctx, width, height, CardEffects.bgTop(), CardEffects.bgBottom());
         sparkles.render(ctx, partial);
-        CardEffects.renderHalo(ctx, width / 2, height / 2 - 20, now, CardEffects.ACCENT_INDIGO);
+        CardEffects.renderHalo(ctx, width / 2, height / 2 - 20, now, CardEffects.accentSecondary());
 
         CardEffects.renderKicker(ctx, tr, width, 60, "TOP ENEMY", now, KICKER_START, KICKER_DURATION);
 
@@ -135,7 +134,7 @@ public final class TopMobCard implements Card {
 
         // Count.
         final String count = entry.getValue() + " killed";
-        final int countColor = (alpha << 24) | (CardEffects.ACCENT_GREEN & 0xFFFFFF);
+        final int countColor = (alpha << 24) | (CardEffects.accent() & 0xFFFFFF);
         ctx.drawCenteredTextWithShadow(tr, Text.literal(count), width / 2, nameY + 30, countColor);
     }
 
