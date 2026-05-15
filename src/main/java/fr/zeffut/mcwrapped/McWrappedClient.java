@@ -1,5 +1,6 @@
 package fr.zeffut.mcwrapped;
 
+import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.stats.MonthlyDelta;
 import fr.zeffut.mcwrapped.stats.DimensionTracker;
 import fr.zeffut.mcwrapped.stats.MultiplayerTracker;
@@ -40,6 +41,9 @@ public final class McWrappedClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         LOGGER.info("Minecraft Wrapped initialized.");
+        // Eagerly load config so the file is created with defaults on first launch and every later
+        // ConfigManager.get() call is just a field read.
+        ConfigManager.init();
 
         serverTracker.register();
         serverStatsTracker.register();

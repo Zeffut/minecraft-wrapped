@@ -33,6 +33,10 @@ public final class WrappedReadyToast {
 
     private static void tryShow(final MinecraftClient client, final SnapshotManager snapshots) {
         if (shownThisSession || client == null) return;
+        final fr.zeffut.mcwrapped.config.McWrappedConfig cfg = fr.zeffut.mcwrapped.config.ConfigManager.get();
+        if (!cfg.autoTriggerEnabled) return;
+        final int today = java.time.LocalDate.now().getDayOfMonth();
+        if (today > Math.max(1, Math.min(31, cfg.autoTriggerGraceDays))) return;
         final Optional<WrappedFile> ready = snapshots.findLatestUnconsumed();
         if (ready.isEmpty()) return;
         shownThisSession = true;
