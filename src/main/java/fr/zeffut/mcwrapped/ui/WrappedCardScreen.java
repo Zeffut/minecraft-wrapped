@@ -14,7 +14,6 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +41,8 @@ public final class WrappedCardScreen extends Screen {
     private float speedAccumulator = 0f;
 
     private long cardStartMillis = 0L;
+    /** Guards against emitting card_viewed twice for the same card occupancy (e.g. ESC during a transition). */
+    private boolean cardViewedEmitted = false;
     private long fpsSampleSum = 0L;
     private long fpsSampleCount = 0L;
     private int fpsMin = Integer.MAX_VALUE;
@@ -226,10 +227,12 @@ public final class WrappedCardScreen extends Screen {
 
     private void markCardStart() {
         cardStartMillis = System.currentTimeMillis();
+        cardViewedEmitted = false;
     }
 
     private void emitCardViewed(final int index) {
-        if (index < 0 || index >= cards.size()) return;
+        if (index < 0 || index >= cards.size() || cardViewedEmitted) return;
+        cardViewedEmitted = true;
         final long durationMs = System.currentTimeMillis() - cardStartMillis;
         Telemetry.capture(Events.CARD_VIEWED, Map.of(
                 "card_id", cards.get(index).analyticsId(),
@@ -253,10 +256,9 @@ public final class WrappedCardScreen extends Screen {
         }
 
         if (fpsSampleCount > 0) {
-            final Map<String, Object> fpsProps = new HashMap<>();
-            fpsProps.put("avg_fps", (int) (fpsSampleSum / fpsSampleCount));
-            fpsProps.put("min_fps", fpsMin == Integer.MAX_VALUE ? 0 : fpsMin);
-            Telemetry.capture(Events.ANIMATION_FPS, fpsProps);
+            Telemetry.capture(Events.ANIMATION_FPS, Map.of(
+                    "avg_fps", (int) (fpsSampleSum / fpsSampleCount),
+                    "min_fps", fpsMin == Integer.MAX_VALUE ? 0 : fpsMin));
         }
     }
 
