@@ -7,6 +7,8 @@ import fr.zeffut.mcwrapped.config.GradientDirection;
 import fr.zeffut.mcwrapped.config.McWrappedConfig;
 import fr.zeffut.mcwrapped.config.SparkleDensity;
 import fr.zeffut.mcwrapped.config.TransitionStyle;
+import fr.zeffut.mcwrapped.telemetry.Events;
+import fr.zeffut.mcwrapped.telemetry.Telemetry;
 import fr.zeffut.mcwrapped.ui.cards.CardEffects;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -20,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Single-window tabbed configuration screen. Six tabs, ~25 widgets total. Mutations are saved
@@ -35,6 +38,7 @@ public final class McWrappedConfigScreen extends Screen {
 
     @Nullable private final Screen parent;
     private int activeTab = 0;
+    private boolean openTracked = false;
 
     // ---- Responsive layout helpers — recomputed every init() because width/height change.
 
@@ -56,6 +60,10 @@ public final class McWrappedConfigScreen extends Screen {
 
     @Override
     protected void init() {
+        if (!openTracked) {
+            Telemetry.capture(Events.CONFIG_OPENED, Map.of());
+            openTracked = true;
+        }
         // Top tab bar — width adapts to the window so the 6 tabs always fit.
         final int tabGap = 4;
         final int tabsTotalW = Math.min(width - 20, MAX_CONTENT_W + 60);
@@ -133,6 +141,7 @@ public final class McWrappedConfigScreen extends Screen {
                 ButtonWidget.builder(Text.literal(cfg.gradient.displayName()), btn -> {
                     cfg.gradient = cycle(cfg.gradient, GradientDirection.values());
                     ConfigManager.save();
+                    recordChange("gradient", "(changed)", cfg.gradient.name());
                     rebuild();
                 }).dimensions(xField, y, fieldW, rowH).build());
         y += rowH + 6;
@@ -148,6 +157,7 @@ public final class McWrappedConfigScreen extends Screen {
     private void cycleTheme(final McWrappedConfig cfg) {
         cfg.theme = cycle(cfg.theme, ColorTheme.values());
         ConfigManager.save();
+        recordChange("theme", "(changed)", cfg.theme.name());
         rebuild();
     }
 
@@ -189,6 +199,7 @@ public final class McWrappedConfigScreen extends Screen {
                 ButtonWidget.builder(Text.literal(cfg.sparkleDensity.displayName()), btn -> {
                     cfg.sparkleDensity = cycle(cfg.sparkleDensity, SparkleDensity.values());
                     ConfigManager.save();
+                    recordChange("sparkleDensity", "(changed)", cfg.sparkleDensity.name());
                     rebuild();
                 }).dimensions(xField, y, fieldW, rowH).build());
         y += rowH + 6;
@@ -198,6 +209,7 @@ public final class McWrappedConfigScreen extends Screen {
                 ButtonWidget.builder(Text.literal(cfg.transition.displayName()), btn -> {
                     cfg.transition = cycle(cfg.transition, TransitionStyle.values());
                     ConfigManager.save();
+                    recordChange("transition", "(changed)", cfg.transition.name());
                     rebuild();
                 }).dimensions(xField, y, fieldW, rowH).build());
     }
@@ -214,6 +226,7 @@ public final class McWrappedConfigScreen extends Screen {
                 ButtonWidget.builder(Text.literal(cfg.aspectRatio.displayName()), btn -> {
                     cfg.aspectRatio = cycle(cfg.aspectRatio, AspectRatio.values());
                     ConfigManager.save();
+                    recordChange("aspectRatio", "(changed)", cfg.aspectRatio.name());
                     rebuild();
                 }).dimensions(xField, y, fieldW, rowH).build());
         y += rowH + 6;
@@ -245,7 +258,23 @@ public final class McWrappedConfigScreen extends Screen {
 
         addRow(y, xLabel, xField, fieldW, "Mask IGN",
                 booleanButton(cfg.maskIgn, xField, y, fieldW, rowH,
-                        v -> { cfg.maskIgn = v; ConfigManager.save(); rebuild(); }));
+                        v -> { recordChange("maskIgn", !v, v); cfg.maskIgn = v; ConfigManager.save(); rebuild(); }));
+        y += rowH + 6;
+
+        addRow(y, xLabel, xField, fieldW, "Telemetry",
+                booleanButton(cfg.telemetryEnabled, xField, y, fieldW, rowH, v -> {
+                    final boolean was = cfg.telemetryEnabled;
+                    if (was && !v) {
+                        Telemetry.captureIgnoringConsent(Events.TELEMETRY_OPT_OUT, Map.of());
+                    }
+                    cfg.telemetryEnabled = v;
+                    ConfigManager.save();
+                    if (!was && v) {
+                        Telemetry.capture(Events.TELEMETRY_OPT_IN, Map.of());
+                    }
+                    recordChange("telemetryEnabled", was, v);
+                    rebuild();
+                }));
         y += rowH + 6;
 
         // Hint about world filter editing.
@@ -262,7 +291,7 @@ public final class McWrappedConfigScreen extends Screen {
 
         addRow(y, xLabel, xField, fieldW, "Auto-trigger",
                 booleanButton(cfg.autoTriggerEnabled, xField, y, fieldW, rowH,
-                        v -> { cfg.autoTriggerEnabled = v; ConfigManager.save(); rebuild(); }));
+                        v -> { recordChange("autoTriggerEnabled", !v, v); cfg.autoTriggerEnabled = v; ConfigManager.save(); rebuild(); }));
         y += rowH + 6;
 
         addRow(y, xLabel, xField, fieldW, "Grace window",
@@ -303,6 +332,13 @@ public final class McWrappedConfigScreen extends Screen {
     private static <T extends Enum<T>> T cycle(final T current, final T[] values) {
         final int next = (current.ordinal() + 1) % values.length;
         return values[next];
+    }
+
+    private static void recordChange(final String setting, final Object oldValue, final Object newValue) {
+        Telemetry.capture(Events.CONFIG_CHANGED, Map.of(
+                "setting", setting,
+                "old_value", String.valueOf(oldValue),
+                "new_value", String.valueOf(newValue)));
     }
 
     // Labels are not widgets — we render them ourselves so they look like field captions.
