@@ -18,4 +18,9 @@ public interface Card {
 
     /** Optional click handling. Return true if consumed. */
     default boolean mouseClicked(final double mouseX, final double mouseY, final int button) { return false; }
+
+    /** Short stable id used in telemetry (e.g. "IntroCard"). */
+    default String analyticsId() {
+        return getClass().getSimpleName();
+    }
 }

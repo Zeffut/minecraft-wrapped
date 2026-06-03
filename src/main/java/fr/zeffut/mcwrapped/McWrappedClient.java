@@ -13,17 +13,24 @@ import fr.zeffut.mcwrapped.stats.StatsReader;
 import fr.zeffut.mcwrapped.stats.StatsSnapshot;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.command.WrappedCommand;
+import fr.zeffut.mcwrapped.telemetry.EventContext;
+import fr.zeffut.mcwrapped.telemetry.Events;
+import fr.zeffut.mcwrapped.telemetry.PostHogTelemetrySink;
+import fr.zeffut.mcwrapped.telemetry.Telemetry;
 import fr.zeffut.mcwrapped.ui.WrappedReadyToast;
 import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public final class McWrappedClient implements ClientModInitializer {
@@ -44,6 +51,7 @@ public final class McWrappedClient implements ClientModInitializer {
         // Eagerly load config so the file is created with defaults on first launch and every later
         // ConfigManager.get() call is just a field read.
         ConfigManager.init();
+        initTelemetry();
 
         serverTracker.register();
         serverStatsTracker.register();
@@ -52,9 +60,35 @@ public final class McWrappedClient implements ClientModInitializer {
         timeOfDayTracker.register();
         dimensionTracker.register();
         ClientLifecycleEvents.CLIENT_STARTED.register(this::captureAndFinalize);
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> Telemetry.shutdown());
         WrappedTitleButton.register(snapshots);
         WrappedReadyToast.register(snapshots);
         WrappedCommand.register(snapshots);
+    }
+
+    /**
+     * Wires the telemetry façade. Runs the SDK init off-thread so a slow network never delays boot.
+     * distinct_id is the raw Minecraft account UUID (user's explicit choice; IPs anonymized
+     * project-side).
+     */
+    private void initTelemetry() {
+        new Thread(() -> {
+            try {
+                final Session session = MinecraftClient.getInstance().getSession();
+                final String uuid = session != null && session.getUuidOrNull() != null
+                        ? session.getUuidOrNull().toString()
+                        : "anonymous";
+                final Map<String, Object> superProps = EventContext.collect();
+                Telemetry.init(new PostHogTelemetrySink(), uuid,
+                        () -> ConfigManager.get().telemetryEnabled, superProps);
+
+                final Map<String, Object> props = new HashMap<>();
+                props.put("history_count", snapshots.listWrapped().size());
+                Telemetry.capture(Events.MOD_LOADED, props);
+            } catch (final RuntimeException e) {
+                LOGGER.debug("Telemetry init skipped: {}", e.getMessage());
+            }
+        }, "mcwrapped-telemetry-init").start();
     }
 
     /**
@@ -93,8 +127,11 @@ public final class McWrappedClient implements ClientModInitializer {
             return;
         }
 
+        final long t0 = System.nanoTime();
         final MonthlyDelta delta = MonthlyDelta.compute(prev, current);
+        final long genMs = (System.nanoTime() - t0) / 1_000_000L;
         snapshots.saveWrapped(new WrappedFile(prev.month(), delta, false));
+        Telemetry.capture(Events.WRAPPED_GENERATION_TIME, Map.of("duration_ms", genMs));
         LOGGER.info("Wrapped ready for {} — a button will appear on the title screen.", prev.month());
     }
 }
