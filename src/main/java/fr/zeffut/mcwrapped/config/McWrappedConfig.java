@@ -54,6 +54,8 @@ public final class McWrappedConfig {
     // ---- E. Privacy --------------------------------------------------------
     public boolean maskServerNames = false;
     public boolean maskIgn = false;
+    /** Opt-out telemetry. Enabled by default; user can disable it in the config screen. */
+    public boolean telemetryEnabled = true;
 
     // ---- F. Trigger --------------------------------------------------------
     public boolean autoTriggerEnabled = true;
@@ -96,6 +98,7 @@ public final class McWrappedConfig {
         this.signature = d.signature;
         this.maskServerNames = d.maskServerNames;
         this.maskIgn = d.maskIgn;
+        this.telemetryEnabled = d.telemetryEnabled;
         this.autoTriggerEnabled = d.autoTriggerEnabled;
         this.autoTriggerGraceDays = d.autoTriggerGraceDays;
     }

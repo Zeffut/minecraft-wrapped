@@ -2,9 +2,12 @@ package fr.zeffut.mcwrapped.ui.cards;
 
 import fr.zeffut.mcwrapped.ui.WrappedSounds;
 import fr.zeffut.mcwrapped.McWrappedClient;
+import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.export.ClipboardHelper;
 import fr.zeffut.mcwrapped.export.ImageExporter;
 import fr.zeffut.mcwrapped.stats.WorldKey;
+import fr.zeffut.mcwrapped.telemetry.Events;
+import fr.zeffut.mcwrapped.telemetry.Telemetry;
 import fr.zeffut.mcwrapped.ui.animation.Easing;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -266,10 +269,12 @@ public final class FinalCard implements Card {
                 MinecraftClient.getInstance().execute(() -> {
                     toastMessage = "Copied to clipboard!";
                     toastStartTick = ticks;
+                    Telemetry.capture(Events.CLIPBOARD_COPIED, Map.of("success", true));
                     WrappedSounds.play(MinecraftClient.getInstance(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f, 0.4f);
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Clipboard copy failed", e);
+                Telemetry.capture(Events.CLIPBOARD_COPIED, Map.of("success", false));
                 MinecraftClient.getInstance().execute(() -> {
                     toastMessage = "Copy failed: " + e.getMessage();
                     toastStartTick = ticks;
@@ -288,10 +293,19 @@ public final class FinalCard implements Card {
                 client.execute(() -> {
                     toastMessage = "Saved to screenshots/wrapped/" + file.getFileName();
                     toastStartTick = ticks;
+                    Telemetry.capture(Events.IMAGE_SAVED, Map.of(
+                            "success", true,
+                            "aspect_ratio", ConfigManager.get().aspectRatio.name()));
                     WrappedSounds.play(client, SoundEvents.ENTITY_PLAYER_LEVELUP, 1.4f, 0.4f);
                 });
             } catch (final IOException | RuntimeException e) {
                 McWrappedClient.LOGGER.warn("Image export failed", e);
+                Telemetry.capture(Events.IMAGE_SAVED, Map.of(
+                        "success", false,
+                        "aspect_ratio", ConfigManager.get().aspectRatio.name()));
+                Telemetry.capture(Events.EXPORT_FAILED, Map.of(
+                        "stage", "save",
+                        "reason", e.getClass().getSimpleName()));
                 MinecraftClient.getInstance().execute(() -> {
                     toastMessage = "Export failed: " + e.getMessage();
                     toastStartTick = ticks;
