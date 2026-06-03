@@ -23,6 +23,23 @@ public record WrappedContext(YearMonth month, MonthlyDelta delta) {
     public long sprintCm()      { return custom().getOrDefault("minecraft:sprint_one_cm", 0L); }
     public long jumps()         { return custom().getOrDefault("minecraft:jump", 0L); }
 
+    /** Sum of all movement custom stats, in centimeters. */
+    public long totalDistanceCm() {
+        final Map<String, Long> c = custom();
+        return c.getOrDefault("minecraft:walk_one_cm", 0L)
+                + c.getOrDefault("minecraft:sprint_one_cm", 0L)
+                + c.getOrDefault("minecraft:boat_one_cm", 0L)
+                + c.getOrDefault("minecraft:aviate_one_cm", 0L)
+                + c.getOrDefault("minecraft:horse_one_cm", 0L)
+                + c.getOrDefault("minecraft:fly_one_cm", 0L)
+                + c.getOrDefault("minecraft:swim_one_cm", 0L);
+    }
+
+    /** "server" if most play time was on servers this month, else "singleplayer". */
+    public String contextType() {
+        return serverTicks() > soloTicks() ? "server" : "singleplayer";
+    }
+
     public List<Map.Entry<String, Long>> topMined(final int n) { return top("minecraft:mined", n); }
     public List<Map.Entry<String, Long>> topKilled(final int n) { return top("minecraft:killed", n); }
     public List<Map.Entry<String, Long>> topKilledBy(final int n) { return top("minecraft:killed_by", n); }
