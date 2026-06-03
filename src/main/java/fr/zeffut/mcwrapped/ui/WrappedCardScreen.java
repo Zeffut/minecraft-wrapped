@@ -2,6 +2,8 @@ package fr.zeffut.mcwrapped.ui;
 
 import fr.zeffut.mcwrapped.config.ConfigManager;
 import fr.zeffut.mcwrapped.config.TransitionStyle;
+import fr.zeffut.mcwrapped.telemetry.Events;
+import fr.zeffut.mcwrapped.telemetry.Telemetry;
 import fr.zeffut.mcwrapped.ui.cards.Card;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
@@ -12,7 +14,9 @@ import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Hosts a sequence of {@link Card}s and crossfades between them.
@@ -37,6 +41,12 @@ public final class WrappedCardScreen extends Screen {
     /** Sub-tick accumulator so non-integer speed multipliers (0.5x, 1.5x) keep working. */
     private float speedAccumulator = 0f;
 
+    private long cardStartMillis = 0L;
+    private long fpsSampleSum = 0L;
+    private long fpsSampleCount = 0L;
+    private int fpsMin = Integer.MAX_VALUE;
+    private boolean ended = false;
+
     public WrappedCardScreen(@Nullable final Screen parent, final List<Card> cards) {
         super(Text.literal("Minecraft Wrapped"));
         this.parent = parent;
@@ -60,6 +70,7 @@ public final class WrappedCardScreen extends Screen {
     protected void init() {
         if (!currentStarted && !cards.isEmpty()) {
             cards.get(currentIndex).start(MinecraftClient.getInstance(), virtualWidth(), virtualHeight());
+            markCardStart();
             currentStarted = true;
         }
     }
@@ -88,6 +99,12 @@ public final class WrappedCardScreen extends Screen {
     }
 
     private void tickOnce() {
+        final int fps = MinecraftClient.getInstance().getCurrentFps();
+        if (fps > 0) {
+            fpsSampleSum += fps;
+            fpsSampleCount++;
+            if (fps < fpsMin) fpsMin = fps;
+        }
         final int vw = virtualWidth();
         final int vh = virtualHeight();
 
@@ -101,8 +118,13 @@ public final class WrappedCardScreen extends Screen {
         final Card current = cards.get(currentIndex);
         current.tick(vw, vh);
         if (current.isDone()) {
-            if (currentIndex >= cards.size() - 1) close();
-            else transitionTicks = 0;
+            emitCardViewed(currentIndex);
+            if (currentIndex >= cards.size() - 1) {
+                endRun(false);
+                close();
+            } else {
+                transitionTicks = 0;
+            }
         }
     }
 
@@ -110,6 +132,7 @@ public final class WrappedCardScreen extends Screen {
         currentIndex++;
         if (currentIndex < cards.size()) {
             cards.get(currentIndex).start(MinecraftClient.getInstance(), vw, vh);
+            markCardStart();
         }
     }
 
@@ -176,6 +199,8 @@ public final class WrappedCardScreen extends Screen {
             return true;
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
+            emitCardViewed(currentIndex);
+            endRun(true);
             close();
             return true;
         }
@@ -192,9 +217,47 @@ public final class WrappedCardScreen extends Screen {
 
     private void jumpToCard(final int targetIndex) {
         if (targetIndex < 0 || targetIndex >= cards.size()) return;
+        emitCardViewed(currentIndex);
         currentIndex = targetIndex;
         transitionTicks = -1;
         cards.get(currentIndex).start(MinecraftClient.getInstance(), virtualWidth(), virtualHeight());
+        markCardStart();
+    }
+
+    private void markCardStart() {
+        cardStartMillis = System.currentTimeMillis();
+    }
+
+    private void emitCardViewed(final int index) {
+        if (index < 0 || index >= cards.size()) return;
+        final long durationMs = System.currentTimeMillis() - cardStartMillis;
+        Telemetry.capture(Events.CARD_VIEWED, Map.of(
+                "card_id", cards.get(index).analyticsId(),
+                "index", index,
+                "duration_ms", durationMs));
+    }
+
+    /** Fires once when the run ends. {@code skipped} distinguishes ESC from natural completion. */
+    private void endRun(final boolean skipped) {
+        if (ended) return;
+        ended = true;
+
+        if (skipped) {
+            Telemetry.capture(Events.WRAPPED_SKIPPED, Map.of(
+                    "card_id", cards.isEmpty() ? "none" : cards.get(currentIndex).analyticsId(),
+                    "index", currentIndex));
+        } else {
+            Telemetry.capture(Events.WRAPPED_COMPLETED, Map.of(
+                    "cards_viewed", cards.size(),
+                    "completion_pct", 100));
+        }
+
+        if (fpsSampleCount > 0) {
+            final Map<String, Object> fpsProps = new HashMap<>();
+            fpsProps.put("avg_fps", (int) (fpsSampleSum / fpsSampleCount));
+            fpsProps.put("min_fps", fpsMin == Integer.MAX_VALUE ? 0 : fpsMin);
+            Telemetry.capture(Events.ANIMATION_FPS, fpsProps);
+        }
     }
 
     @Override
