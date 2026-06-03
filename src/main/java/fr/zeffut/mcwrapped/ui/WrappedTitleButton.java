@@ -3,10 +3,8 @@ package fr.zeffut.mcwrapped.ui;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
 import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
-import fr.zeffut.mcwrapped.ui.cards.WrappedSequence;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
@@ -43,13 +41,16 @@ public final class WrappedTitleButton {
                     .dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                     .build();
             Screens.getButtons(screen).add(button);
+            fr.zeffut.mcwrapped.telemetry.Telemetry.capture(
+                    fr.zeffut.mcwrapped.telemetry.Events.WRAPPED_READY_SHOWN,
+                    java.util.Map.of("month", wrapped.month().toString()));
         });
     }
 
     private static void openWrapped(final SnapshotManager snapshots, final net.minecraft.client.gui.screen.Screen parent, final WrappedFile wrapped) {
         snapshots.saveWrapped(wrapped.asConsumed());
         final WrappedContext context = new WrappedContext(wrapped.month(), wrapped.delta());
-        MinecraftClient.getInstance().setScreen(new WrappedCardScreen(parent, WrappedSequence.full(context)));
+        WrappedLauncher.open(parent, context, "title_button");
     }
 
     private static String monthLabel(final YearMonth month) {
