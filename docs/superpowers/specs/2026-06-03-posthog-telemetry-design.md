@@ -27,20 +27,31 @@ complétion, features utilisées, erreurs en prod, etc.).
 | Identité | **UUID Minecraft brut** comme `distinct_id` (choix de Zeffut ; IP anonymisée) |
 | Intégration SDK | **SDK officiel** `com.posthog:posthog-server` |
 | Bundling | **Shadow + relocation** |
-| Projet PostHog | **Projet dédié** « Minecraft Wrapped » (à créer manuellement) |
+| Projet PostHog | **Projet partagé « Default project »** (id `192659`) — le plan PostHog ne permet pas de créer un projet dédié. Isolation par **tag d'application**. |
+
+### Isolation dans le projet partagé
+
+Le projet `Default project` héberge déjà une autre app (Esiee-Salles). Pour séparer
+proprement les données du mod :
+
+1. **Super-property `app = "minecraft-wrapped"`** sur **chaque** event → tout filtrage
+   d'insight/dashboard se fait sur `app = minecraft-wrapped`.
+2. **Préfixe `mcw_` sur tous les noms d'events** (`mcw_mod_loaded`, `mcw_card_viewed`, …)
+   → aucune collision de nom avec les events de l'autre app dans la liste d'events.
 
 ---
 
-## 2. Prérequis externes (bloquants)
+## 2. Prérequis externes
 
-1. **Créer le projet PostHog dédié** dans l'UI (Settings → Projects → New project),
-   nommé « Minecraft Wrapped ». Le MCP PostHog n'expose pas de tool de création.
-2. Récupérer le **Project API key** (`phc_…`) du nouveau projet.
-3. Confirmer le **host d'ingestion** : `https://eu.i.posthog.com` ou `https://us.i.posthog.com`.
-4. Activer **`anonymize_ips`** dans les settings du projet.
+Valeurs connues (projet partagé `Default project`) :
 
-La clé et le host seront stockés comme constantes dans le code (clé write-only publique,
-safe à embarquer dans un client open-source).
+- **Project API key** : `phc_zdMj4p5wo8EvfVApjb2EbfUHJ76zgYGM5wAGz5YJC359`
+- **Host d'ingestion** : `https://eu.i.posthog.com` — **À CONFIRMER** (EU vs US) dans le
+  snippet d'install des settings PostHog. Constante d'une ligne, triviale à corriger.
+- À activer côté projet : **`anonymize_ips`**.
+
+La clé et le host sont stockés comme constantes dans le code (clé write-only publique,
+safe à embarquer dans un client open-source MIT).
 
 ---
 
@@ -93,9 +104,13 @@ La télémétrie est strictement *fire-and-forget* :
 
 ## 6. Catalogue d'events
 
+> **Nommage** : tous les events sont préfixés `mcw_` (ex. `mcw_mod_loaded`). Les noms ci-dessous
+> sont donnés sans préfixe pour la lisibilité ; le code les préfixe systématiquement via `Events`.
+
 ### Super-properties (sur chaque event, via `EventContext`)
-`mod_version`, `mc_version`, `fabric_loader_version`, `fabric_api_version`,
-`os_name`, `os_arch`, `java_version`, `language` (locale MC).
+`app` (= `"minecraft-wrapped"`, tag d'isolation), `mod_version`, `mc_version`,
+`fabric_loader_version`, `fabric_api_version`, `os_name`, `os_arch`, `java_version`,
+`language` (locale MC).
 
 ### 6.1 Lifecycle & usage
 | Event | Properties |
