@@ -71,6 +71,9 @@ shadowJar {
     relocate 'com.google.gson', 'fr.zeffut.mcwrapped.shadow.gson'
     relocate 'kotlin', 'fr.zeffut.mcwrapped.shadow.kotlin'
     relocate 'org.jetbrains', 'fr.zeffut.mcwrapped.shadow.jetbrains'
+    // org.jetbrains:annotations also ships an org.intellij.lang.annotations package — relocate it
+    // too so nothing leaks into the root namespace and clashes with other mods.
+    relocate 'org.intellij', 'fr.zeffut.mcwrapped.shadow.intellij'
 }
 
 tasks.named('remapJar') {

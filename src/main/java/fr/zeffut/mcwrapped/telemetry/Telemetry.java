@@ -70,17 +70,29 @@ public final class Telemetry {
 
     public static void shutdown() {
         final TelemetrySink s = sink;
-        if (s != null) {
+        // Stop accepting events immediately so nothing races on a half-closed sink.
+        sink = null;
+        distinctId = null;
+        enabled = () -> false;
+        superProps = Map.of();
+        if (s == null) return;
+
+        // Flush/close off the caller thread (client-stopping) and bound the wait, so a slow or
+        // unreachable network can never hang game shutdown for more than a couple of seconds.
+        final Thread t = new Thread(() -> {
             try {
                 s.flush();
                 s.close();
             } catch (final RuntimeException e) {
                 LOGGER.debug("telemetry shutdown failed: {}", e.getMessage());
             }
+        }, "mcwrapped-telemetry-shutdown");
+        t.setDaemon(true);
+        t.start();
+        try {
+            t.join(3000L);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        sink = null;
-        distinctId = null;
-        enabled = () -> false;
-        superProps = Map.of();
     }
 }
