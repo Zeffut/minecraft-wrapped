@@ -461,8 +461,8 @@ public final class McWrappedClient implements ClientModInitializer {
 
 - ❌ **Pas de plugin serveur**. Tout est client.
 - ❌ **Pas de plateforme web**. Le sharing est juste un export image local + clipboard. Lien web = v1.1+.
-- ❌ **Pas de monétisation, pas d'analytics, pas de tracking**. Privacy first.
-- ❌ **Pas de network calls** dans le MVP. Le mod marche 100% offline.
+- ✅ **Télémétrie opt-out anonyme via PostHog** (depuis v1.2). Activée par défaut, désactivable via `/wrapped telemetry off` ou le toggle Privacy de la config. Aucune donnée perso, IP anonymisée, buckets agrégés. Voir `docs/superpowers/specs/2026-06-03-posthog-telemetry-design.md`.
+- ❌ **Pas de monétisation forcée.** Privacy-first reste la règle pour tout le reste : pas de PII, pas de tracking publicitaire, pas d'autres appels réseau que la télémétrie.
 - ❌ **Pas d'overengineering**. Pas de DI framework, pas d'abstractions inutiles. Le code doit rester simple et lisible.
 - ❌ **Pas de mixins** sauf si vraiment nécessaire (probablement pas pour ce projet).
 - ❌ **Pas de support Forge/NeoForge** pour le MVP.
