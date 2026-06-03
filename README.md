@@ -39,8 +39,8 @@ The recap only includes cards that are relevant to your data. Played 5 minutes? 
 
 ### Privacy first
 
-- 100% client-side. No telemetry, no analytics, no remote calls.
-- Your data lives in `<game>/wrapped/`. Delete it any time.
+- Your Wrapped data lives in `<game>/wrapped/`. Delete it any time.
+- Anonymous usage telemetry helps improve the mod. It's **opt-out** — see below.
 
 ## Install
 
@@ -79,6 +79,23 @@ The mod runs silently in the background. On the **first day of every month**, wh
 |---|---|
 | `/wrapped` | Replay the latest finalized Wrapped |
 | `/wrapped history` | Browse all your past Wrappeds |
+| `/wrapped telemetry on\|off\|status` | Turn anonymous telemetry on/off, or check its state |
+
+## Telemetry & privacy
+
+Minecraft Wrapped sends **anonymous** usage telemetry to help improve the mod (which cards
+people watch, which features get used, errors). It is **enabled by default** and you can turn
+it off at any time:
+
+- In-game: `/wrapped telemetry off`
+- Config screen (ModMenu → Minecraft Wrapped → Privacy): the **Telemetry** toggle
+
+**What is sent:** mod / Minecraft / Fabric versions, OS, language, which cards you view and for
+how long, feature usage (export / save / copy / commands / config changes), coarse gameplay
+buckets (e.g. playtime `10-50h`, not exact numbers), your archetype, and mod errors.
+
+**What is never sent:** your username, world names, server addresses, file paths, chat, or exact
+stat values. IP addresses are anonymized. Telemetry is processed via [PostHog](https://posthog.com).
 
 ## How it works
 
