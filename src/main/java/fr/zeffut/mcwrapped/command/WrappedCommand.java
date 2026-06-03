@@ -4,10 +4,9 @@ import com.mojang.brigadier.Command;
 import fr.zeffut.mcwrapped.config.ui.McWrappedConfigScreen;
 import fr.zeffut.mcwrapped.stats.SnapshotManager;
 import fr.zeffut.mcwrapped.stats.WrappedFile;
-import fr.zeffut.mcwrapped.ui.WrappedCardScreen;
 import fr.zeffut.mcwrapped.ui.WrappedHistoryScreen;
+import fr.zeffut.mcwrapped.ui.WrappedLauncher;
 import fr.zeffut.mcwrapped.ui.cards.WrappedContext;
-import fr.zeffut.mcwrapped.ui.cards.WrappedSequence;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.client.MinecraftClient;
@@ -46,7 +45,7 @@ public final class WrappedCommand {
             return Command.SINGLE_SUCCESS;
         }
         final WrappedContext ctx = new WrappedContext(target.month(), target.delta());
-        client.send(() -> client.setScreen(new WrappedCardScreen(client.currentScreen, WrappedSequence.full(ctx))));
+        client.send(() -> WrappedLauncher.open(client.currentScreen, ctx, "command"));
         return Command.SINGLE_SUCCESS;
     }
 
