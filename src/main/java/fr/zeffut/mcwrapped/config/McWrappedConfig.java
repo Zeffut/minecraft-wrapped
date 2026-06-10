@@ -62,6 +62,16 @@ public final class McWrappedConfig {
     /** 1..31 days after month rollover where the title-screen prompt appears. */
     public int autoTriggerGraceDays = 7;
 
+    // ---- G. Auto-update (embedded AutoUpdate module) -----------------------
+    /** Silently keep this mod (and other Zeffut Modrinth mods) up to date. */
+    public boolean autoUpdate = true;
+    /** Modrinth account whose mods are eligible for silent updates. */
+    public String updateOwner = "Zeffut";
+    /** If true, update ALL Modrinth mods in mods/, not just {@link #updateOwner}'s. */
+    public boolean updateAll = false;
+    /** Comma-separated slugs/project ids to never auto-update. */
+    public String updateExclude = "";
+
     // ---- Defaults helpers --------------------------------------------------
 
     private static Map<CardId, Boolean> defaultEnabled() {
@@ -101,6 +111,10 @@ public final class McWrappedConfig {
         this.telemetryEnabled = d.telemetryEnabled;
         this.autoTriggerEnabled = d.autoTriggerEnabled;
         this.autoTriggerGraceDays = d.autoTriggerGraceDays;
+        this.autoUpdate = d.autoUpdate;
+        this.updateOwner = d.updateOwner;
+        this.updateAll = d.updateAll;
+        this.updateExclude = d.updateExclude;
     }
 
     // ---- Resolved getters --------------------------------------------------
