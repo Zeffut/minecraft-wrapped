@@ -55,6 +55,13 @@ loom {
     runs {
         client {
             programArgs '--username', 'Zeffut'
+            // Forward -Pautoupdate.* project properties to the client JVM as -D system properties,
+            // so the embedded AutoUpdate module can be exercised in dev (custom mods dir, etc.).
+            ['autoupdate.enabled', 'autoupdate.mods.dir', 'autoupdate.api'].each { key ->
+                if (project.hasProperty(key)) {
+                    vmArg "-D${key}=${project.property(key)}"
+                }
+            }
         }
     }
 }
