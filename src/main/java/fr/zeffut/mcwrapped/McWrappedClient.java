@@ -17,6 +17,7 @@ import fr.zeffut.mcwrapped.telemetry.EventContext;
 import fr.zeffut.mcwrapped.telemetry.Events;
 import fr.zeffut.mcwrapped.telemetry.PostHogTelemetrySink;
 import fr.zeffut.mcwrapped.telemetry.Telemetry;
+import fr.zeffut.mcwrapped.update.UpdateService;
 import fr.zeffut.mcwrapped.ui.WrappedReadyToast;
 import fr.zeffut.mcwrapped.ui.WrappedTitleButton;
 import net.fabricmc.api.ClientModInitializer;
@@ -85,9 +86,13 @@ public final class McWrappedClient implements ClientModInitializer {
                 final Map<String, Object> props = new HashMap<>();
                 props.put("history_count", snapshots.listWrapped().size());
                 Telemetry.capture(Events.MOD_LOADED, props);
+                Telemetry.startHeartbeat();
             } catch (final RuntimeException e) {
                 LOGGER.debug("Telemetry init skipped: {}", e.getMessage());
             }
+            // Embedded silent auto-updater (MC/mapping-agnostic). Started after telemetry init so its
+            // upd_* events are captured; guarded by a JVM-global lock so only one Zeffut mod runs it.
+            UpdateService.start();
         }, "mcwrapped-telemetry-init").start();
     }
 
